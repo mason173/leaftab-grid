@@ -58,6 +58,12 @@ Current non-goals:
 
 Leaftab Grid is extracted from a production-oriented shortcut surface inside Leaftab and is being shaped into a standalone open-source module.
 
+Current repository status:
+
+- `@leaftab/grid-core` is a real standalone package with its own source, tests, typecheck, and build pipeline.
+- `@leaftab/grid-react` is currently a package shell reserved for the next extraction step.
+- `snapshot/` remains as a reference boundary for the parts that have not been fully lifted yet.
+
 The current supported interaction model guarantees:
 
 - root shortcuts

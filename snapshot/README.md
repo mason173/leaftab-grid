@@ -9,12 +9,16 @@ It exists for one reason:
 What this snapshot is:
 
 - a working source mirror of the current shortcut-grid boundary inside Leaftab
-- the reference set for future extraction into `packages/grid-core` and `packages/grid-react`
+- the reference set for the remaining extraction into `packages/grid-react` and follow-up adapters
 
 What this snapshot is not:
 
 - the final published package layout
 - a promise that every file here is already standalone-package quality
+
+What is already extracted:
+
+- `packages/grid-core` now contains the standalone pure logic package for layout, drag, model, and domain behavior
 
 Use the documents in `docs/` to guide the next step:
 

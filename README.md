@@ -61,7 +61,7 @@ Leaftab Grid is extracted from a production-oriented shortcut surface inside Lea
 Current repository status:
 
 - `@leaftab/grid-core` is a real standalone package with its own source, tests, typecheck, and build pipeline.
-- `@leaftab/grid-react` is currently a package shell reserved for the next extraction step.
+- `@leaftab/grid-react` now includes the first shared React primitives: drag-motion state and a generic draggable item frame.
 - `snapshot/` remains as a reference boundary for the parts that have not been fully lifted yet.
 
 The current supported interaction model guarantees:

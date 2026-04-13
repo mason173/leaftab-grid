@@ -19,6 +19,7 @@ What this snapshot is not:
 What is already extracted:
 
 - `packages/grid-core` now contains the standalone pure logic package for layout, drag, model, and domain behavior
+- `packages/grid-react` now contains the first shared React primitives that sit on top of `grid-core`
 
 Use the documents in `docs/` to guide the next step:
 

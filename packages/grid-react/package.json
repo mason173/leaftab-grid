@@ -1,6 +1,7 @@
 {
   "name": "@leaftab/grid-react",
   "version": "0.1.0",
+  "description": "React adapters for Leaftab Grid, including root-grid and folder-surface interactions.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -16,12 +17,19 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "react",
+    "grid",
+    "drag-and-drop",
+    "shortcuts",
+    "folders"
+  ],
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
-    "@leaftab/grid-core": "file:../grid-core"
+    "@leaftab/grid-core": "^0.1.0"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.json",

@@ -2,8 +2,17 @@
   "name": "leaftab-grid",
   "private": true,
   "version": "0.1.0",
+  "description": "Folder-aware desktop-style grid engine and React adapters extracted from Leaftab.",
   "license": "GPL-3.0-or-later",
   "packageManager": "npm@10",
+  "keywords": [
+    "grid",
+    "drag-and-drop",
+    "desktop",
+    "shortcuts",
+    "folders",
+    "react"
+  ],
   "workspaces": [
     "packages/*",
     "examples/*"
@@ -11,7 +20,8 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "npm run typecheck && npm run test && npm run build && node scripts/verify-packages.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

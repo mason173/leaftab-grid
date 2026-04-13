@@ -1,6 +1,7 @@
 {
   "name": "@leaftab/grid-core",
   "version": "0.1.0",
+  "description": "Pure layout, drag, and folder-aware shortcut grid logic for Leaftab Grid.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -15,6 +16,13 @@
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "grid",
+    "drag-and-drop",
+    "layout",
+    "shortcuts",
+    "folders"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.json",

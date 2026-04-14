@@ -1,8 +1,10 @@
 # Leaftab Workspace
 
-A desktop-style, folder-aware shortcut grid engine for launcher and browser start-page experiences.
+Desktop-style shortcut workspace engine for launcher and browser new-tab experiences.
 
 Leaftab Workspace is the open-source interaction layer extracted from [LeafTab](https://github.com/mason173/LeafTab). It is built for shortcut surfaces that need to feel more like a desktop, launcher, or new-tab workspace than a generic sortable list.
+
+At its core, this project is about making shortcut grids behave like a real product surface instead of a generic drag-and-drop demo.
 
 It focuses on behaviors that typical sortable grids usually do not cover well:
 

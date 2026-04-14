@@ -12,7 +12,7 @@ Suggested release type:
 
 ## Summary
 
-This alpha introduces the first serious public shape of Leaftab Workspace as an open-source shortcut workspace engine.
+This alpha introduces the first serious public shape of Leaftab Workspace as an open-source desktop-style shortcut workspace engine.
 
 The repository now has three clear layers:
 
@@ -27,6 +27,8 @@ It also now includes:
 - a custom-theme example
 - a GitHub Pages showcase
 - stronger tests, CI, and release discipline
+
+The goal is not to publish a generic sortable grid. The goal is to make folder-aware shortcut surfaces reusable for launcher and browser start-page products.
 
 ## Highlights
 
@@ -93,4 +95,4 @@ That is the beginning of a healthier long-term sync model instead of two driftin
 
 ## Suggested Release Footer
 
-This is an alpha pre-release. The API and preset surface may continue to evolve, but the goal is already clear: make high-quality, folder-aware shortcut workspace behavior reusable outside the LeafTab app.
+This is an alpha pre-release. The API and preset surface may continue to evolve, but the goal is already clear: make high-quality, desktop-style shortcut workspace behavior reusable outside the LeafTab app.

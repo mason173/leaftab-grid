@@ -1,7 +1,7 @@
 {
   "name": "@leaftab/workspace-react",
   "version": "0.2.0-alpha.1",
-  "description": "React adapters for Leaftab Workspace, including root-grid and folder-surface interactions.",
+  "description": "React adapters for Leaftab Workspace, including root-grid and folder-surface interactions for shortcut workspaces.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",

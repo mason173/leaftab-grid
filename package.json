@@ -2,7 +2,7 @@
   "name": "leaftab-workspace",
   "private": true,
   "version": "0.2.0-alpha.1",
-  "description": "Folder-aware desktop-style grid engine and React adapters extracted from Leaftab.",
+  "description": "Desktop-style shortcut workspace engine and React adapters extracted from LeafTab.",
   "license": "GPL-3.0-or-later",
   "packageManager": "npm@10",
   "keywords": [

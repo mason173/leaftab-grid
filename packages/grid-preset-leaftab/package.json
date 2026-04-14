@@ -1,7 +1,7 @@
 {
   "name": "@leaftab/workspace-preset-leaftab",
   "version": "0.2.0-alpha.1",
-  "description": "LeafTab-like layout and rendering preset for Leaftab Workspace hosts.",
+  "description": "LeafTab-like layout and rendering preset for Leaftab Workspace shortcut hosts.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",

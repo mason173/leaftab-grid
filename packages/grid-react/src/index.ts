@@ -6,6 +6,9 @@ export {
   GridDragItemFrame,
 } from './GridDragItemFrame';
 export type {
+  GridPreviewRect,
+} from './previewGeometry';
+export type {
   FolderShortcutSurfaceItemLayout,
   FolderShortcutSurfaceProps,
   FolderShortcutSurfaceRenderDragPreviewParams,

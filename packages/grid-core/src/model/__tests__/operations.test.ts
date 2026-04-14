@@ -140,4 +140,15 @@ describe('shortcut model operations', () => {
       createLink('c', 'Gamma'),
     ]);
   });
+
+  it('does not apply the preserved-anchor path when the active item is the large folder itself', () => {
+    const shortcuts: Shortcut[] = [
+      createLink('a', 'Alpha'),
+      createLink('b', 'Beta'),
+      createLargeFolder('folder-large', 'Large', [createLink('nested', 'Nested')]),
+      createLink('c', 'Gamma'),
+    ];
+
+    expect(reorderRootShortcutPreservingLargeFolderPositions(shortcuts, 'folder-large', 0)).toBeNull();
+  });
 });

@@ -4,12 +4,10 @@ import {
   buildReorderProjectionOffsets as buildSharedReorderProjectionOffsets,
   combineProjectionOffsets,
   getDragVisualCenter,
-  getDropEdge,
   getReorderTargetIndex,
   hasPointerDragActivated,
   measureDragItemRects,
   measureDragItems,
-  pickClosestMeasuredItem,
   pointInRect,
   type ActivePointerDragState,
   type FolderExtractDragStartPayload,
@@ -17,24 +15,31 @@ import {
   type PendingPointerDragState,
   type PointerPoint,
   type ProjectionOffset,
-  type RootDropEdge,
   type Shortcut,
 } from '@leaftab/grid-core';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  resolveCompactReorderOnlyHoverResolution,
+  type CompactReorderHoverIntent,
+  type CompactReorderHoverResolution,
+  type CompactTargetRegion,
+  type CompactTargetRegions,
+} from './compactRootHover';
 import { GridDragItemFrame } from './GridDragItemFrame';
+import { normalizePreviewGeometry, type GridPreviewRect } from './previewGeometry';
+import { resolveFinalHoverIntent } from './rootShortcutGridHelpers';
 import { useDragMotionState } from './useDragMotionState';
 
-const DRAG_MATCH_DISTANCE_PX = 72;
 const EXTRACT_HANDOFF_DELAY_MS = 520;
 const DRAG_OVERLAY_Z_INDEX = 2147483000;
 const LAYOUT_SHIFT_MIN_DISTANCE_PX = 0.5;
 const DRAG_RELEASE_SETTLE_DURATION_MS = 220;
 
-type FolderHoverState =
-  | { type: 'item'; shortcutId: string; edge: Exclude<RootDropEdge, 'center'> }
-  | { type: 'mask' }
-  | null;
+const EMPTY_FOLDER_HOVER_RESOLUTION: CompactReorderHoverResolution = {
+  interactionIntent: null,
+  visualProjectionIntent: null,
+};
 
 type PendingDragState = PendingPointerDragState<string> & {
   activeShortcutId: string;
@@ -57,6 +62,7 @@ type FolderItemLayout = {
 };
 
 type MeasuredFolderItem = {
+  sortId: string;
   shortcut: Shortcut;
   shortcutIndex: number;
   layout: FolderItemLayout;
@@ -79,6 +85,7 @@ export type FolderShortcutSurfaceItemLayout = {
   previewOffsetX?: number;
   previewOffsetY?: number;
   previewBorderRadius?: string;
+  previewRect?: GridPreviewRect;
 };
 
 export type FolderShortcutSurfaceRenderItemParams = {
@@ -125,16 +132,24 @@ function detectFirefox() {
 function normalizeItemLayout(layout: FolderShortcutSurfaceItemLayout): FolderItemLayout {
   const width = Math.max(1, layout.width);
   const height = Math.max(1, layout.height);
-  const previewWidth = Math.max(1, layout.previewWidth ?? width);
-  const previewHeight = Math.max(1, layout.previewHeight ?? height);
+  const previewGeometry = normalizePreviewGeometry({
+    width,
+    height,
+    previewWidth: layout.previewWidth,
+    previewHeight: layout.previewHeight,
+    previewOffsetX: layout.previewOffsetX,
+    previewOffsetY: layout.previewOffsetY,
+    previewBorderRadius: layout.previewBorderRadius,
+    previewRect: layout.previewRect,
+  });
   return {
     width,
     height,
-    previewWidth,
-    previewHeight,
-    previewOffsetX: layout.previewOffsetX ?? Math.max(0, (width - previewWidth) / 2),
-    previewOffsetY: layout.previewOffsetY ?? Math.max(0, (height - previewHeight) / 2),
-    previewBorderRadius: layout.previewBorderRadius,
+    previewWidth: previewGeometry.previewWidth,
+    previewHeight: previewGeometry.previewHeight,
+    previewOffsetX: previewGeometry.previewOffsetX,
+    previewOffsetY: previewGeometry.previewOffsetY,
+    previewBorderRadius: previewGeometry.previewBorderRadius,
   };
 }
 
@@ -174,6 +189,7 @@ function buildMeasuredItems(
   resolveItemLayout: (shortcut: Shortcut) => FolderShortcutSurfaceItemLayout,
 ) {
   return shortcuts.map((shortcut, shortcutIndex) => ({
+    sortId: shortcut.id,
     shortcut,
     shortcutIndex,
     layout: normalizeItemLayout(resolveItemLayout(shortcut)),
@@ -181,7 +197,7 @@ function buildMeasuredItems(
 }
 
 function measureFolderItems(
-  items: Array<{ shortcut: Shortcut; shortcutIndex: number; layout: FolderItemLayout }>,
+  items: Array<{ sortId: string; shortcut: Shortcut; shortcutIndex: number; layout: FolderItemLayout }>,
   itemElements: Map<string, HTMLDivElement>,
 ): MeasuredFolderItem[] {
   return measureDragItems({
@@ -195,25 +211,25 @@ function buildReorderProjectionOffsets(params: {
   shortcuts: Shortcut[];
   layoutSnapshot: MeasuredFolderItem[] | null;
   activeShortcutId: string | null;
-  hoverState: FolderHoverState;
+  hoverIntent: CompactReorderHoverIntent | null;
 }): Map<string, ProjectionOffset> {
-  const { shortcuts, layoutSnapshot, activeShortcutId, hoverState } = params;
-  if (hoverState?.type !== 'item') {
+  const { shortcuts, layoutSnapshot, activeShortcutId, hoverIntent } = params;
+  if (!hoverIntent) {
     return new Map<string, ProjectionOffset>();
   }
 
   const items = shortcuts.map((shortcut, shortcutIndex) => ({ shortcut, shortcutIndex }));
   const activeIndex = shortcuts.findIndex((shortcut) => shortcut.id === activeShortcutId);
-  const overIndex = shortcuts.findIndex((shortcut) => shortcut.id === hoverState.shortcutId);
+  const overIndex = shortcuts.findIndex((shortcut) => shortcut.id === hoverIntent.overShortcutId);
   const targetIndex = activeIndex < 0 || overIndex < 0
     ? null
-    : getReorderTargetIndex(activeIndex, overIndex, hoverState.edge);
+    : getReorderTargetIndex(activeIndex, overIndex, hoverIntent.edge);
 
   return buildSharedReorderProjectionOffsets({
     items,
     layoutSnapshot,
     activeId: activeShortcutId,
-    hoveredId: hoverState.shortcutId,
+    hoveredId: hoverIntent.overShortcutId,
     targetIndex,
     getId: (item) => item.shortcut.id,
   });
@@ -224,7 +240,7 @@ function buildProjectedDropPreview(params: {
   measuredItems: Array<{ shortcut: Shortcut; shortcutIndex: number; layout: FolderItemLayout }>;
   layoutSnapshot: MeasuredFolderItem[] | null;
   activeShortcutId: string | null;
-  hoverState: FolderHoverState;
+  hoverIntent: CompactReorderHoverIntent | null;
   rootElement: HTMLDivElement | null;
 }): FolderProjectedDropPreview | null {
   const {
@@ -232,11 +248,11 @@ function buildProjectedDropPreview(params: {
     measuredItems,
     layoutSnapshot,
     activeShortcutId,
-    hoverState,
+    hoverIntent,
     rootElement,
   } = params;
 
-  if (!layoutSnapshot || !activeShortcutId || !rootElement || hoverState?.type === 'mask') {
+  if (!layoutSnapshot || !activeShortcutId || !rootElement) {
     return null;
   }
 
@@ -247,8 +263,8 @@ function buildProjectedDropPreview(params: {
   const activeSnapshot = snapshotById.get(activeShortcutId);
   if (!activeSnapshot) return null;
 
-  const targetRect = hoverState?.type === 'item'
-    ? snapshotById.get(hoverState.shortcutId) ?? activeSnapshot
+  const targetRect = hoverIntent
+    ? snapshotById.get(hoverIntent.overShortcutId) ?? activeSnapshot
     : activeSnapshot;
   const rootRect = rootElement.getBoundingClientRect();
 
@@ -265,23 +281,23 @@ function buildProjectedDragSettleTarget(params: {
   shortcuts: Shortcut[];
   layoutSnapshot: MeasuredFolderItem[] | null;
   activeShortcutId: string | null;
-  hoverState: FolderHoverState;
+  hoverIntent: CompactReorderHoverIntent | null;
 }): { left: number; top: number } | null {
-  const { shortcuts, layoutSnapshot, activeShortcutId, hoverState } = params;
+  const { shortcuts, layoutSnapshot, activeShortcutId, hoverIntent } = params;
   if (!layoutSnapshot || !activeShortcutId) return null;
 
   const activeIndex = shortcuts.findIndex((shortcut) => shortcut.id === activeShortcutId);
   const activeSnapshot = layoutSnapshot.find((item) => item.shortcut.id === activeShortcutId)?.rect ?? null;
   if (activeIndex < 0 || !activeSnapshot) return null;
 
-  if (!hoverState || hoverState.type === 'mask') {
+  if (!hoverIntent) {
     return {
       left: activeSnapshot.left,
       top: activeSnapshot.top,
     };
   }
 
-  const targetShortcutIndex = shortcuts.findIndex((shortcut) => shortcut.id === hoverState.shortcutId);
+  const targetShortcutIndex = shortcuts.findIndex((shortcut) => shortcut.id === hoverIntent.overShortcutId);
   if (targetShortcutIndex < 0) {
     return {
       left: activeSnapshot.left,
@@ -289,7 +305,7 @@ function buildProjectedDragSettleTarget(params: {
     };
   }
 
-  const targetIndex = getReorderTargetIndex(activeIndex, targetShortcutIndex, hoverState.edge);
+  const targetIndex = getReorderTargetIndex(activeIndex, targetShortcutIndex, hoverIntent.edge);
   const orderedRects = shortcuts
     .map((shortcut) => layoutSnapshot.find((item) => item.shortcut.id === shortcut.id)?.rect ?? null)
     .filter((rect): rect is DOMRect => Boolean(rect));
@@ -302,19 +318,25 @@ function buildProjectedDragSettleTarget(params: {
   };
 }
 
-function pickOverItem(params: {
-  activeShortcutId: string;
-  measuredItems: MeasuredFolderItem[];
+function buildVisualRect(params: {
   pointer: PointerPoint;
-}): MeasuredFolderItem | null {
-  const { activeShortcutId, measuredItems, pointer } = params;
-  return pickClosestMeasuredItem({
-    activeId: activeShortcutId,
-    measuredItems,
-    pointer,
-    getId: (item) => item.shortcut.id,
-    maxDistance: DRAG_MATCH_DISTANCE_PX,
-  });
+  previewOffset: PointerPoint;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+}): CompactTargetRegion {
+  const { pointer, previewOffset, width, height, offsetX, offsetY } = params;
+  const left = pointer.x - previewOffset.x + offsetX;
+  const top = pointer.y - previewOffset.y + offsetY;
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+    width,
+    height,
+  };
 }
 
 function FolderMaskDropZones({
@@ -394,15 +416,20 @@ export function FolderShortcutSurface({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragPointer, setDragPointer] = useState<PointerPoint | null>(null);
   const [dragPreviewOffset, setDragPreviewOffset] = useState<PointerPoint | null>(null);
-  const [hoverState, setHoverState] = useState<FolderHoverState>(null);
+  const [hoverResolution, setHoverResolution] = useState<CompactReorderHoverResolution>(
+    EMPTY_FOLDER_HOVER_RESOLUTION,
+  );
+  const [hoveredMask, setHoveredMask] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const itemElementsRef = useRef(new Map<string, HTMLDivElement>());
   const ignoreClickRef = useRef(false);
   const pendingDragRef = useRef<PendingDragState | null>(null);
   const dragSessionRef = useRef<DragSessionState | null>(null);
-  const latestHoverStateRef = useRef<FolderHoverState>(null);
+  const latestHoverResolutionRef = useRef<CompactReorderHoverResolution>(EMPTY_FOLDER_HOVER_RESOLUTION);
+  const hoveredMaskRef = useRef(false);
   const extractHandoffTimerRef = useRef<number | null>(null);
   const latestPointerRef = useRef<PointerPoint | null>(null);
+  const recognitionPointRef = useRef<PointerPoint | null>(null);
   const projectionSettleResumeRafRef = useRef<number | null>(null);
   const [dragLayoutSnapshot, setDragLayoutSnapshot] = useState<MeasuredFolderItem[] | null>(null);
   const [suppressProjectionSettleAnimation, setSuppressProjectionSettleAnimation] = useState(false);
@@ -424,34 +451,41 @@ export function FolderShortcutSurface({
     [activeDragId, measuredItems],
   );
 
+  const hoverIntent = hoverResolution.interactionIntent;
+  const visualProjectionIntent = hoverResolution.visualProjectionIntent;
+
   const projectionOffsets = useMemo(
     () => buildReorderProjectionOffsets({
       shortcuts,
       layoutSnapshot: dragLayoutSnapshot,
       activeShortcutId: activeDragId,
-      hoverState,
+      hoverIntent: visualProjectionIntent,
     }),
-    [activeDragId, dragLayoutSnapshot, hoverState, shortcuts],
+    [activeDragId, dragLayoutSnapshot, shortcuts, visualProjectionIntent],
   );
   const projectedDropPreview = useMemo(() => buildProjectedDropPreview({
     shortcuts,
     measuredItems,
     layoutSnapshot: dragLayoutSnapshot,
     activeShortcutId: activeDragId,
-    hoverState,
+    hoverIntent: visualProjectionIntent,
     rootElement: rootRef.current,
   }), [
     activeDragId,
     dragLayoutSnapshot,
-    hoverState,
     measuredItems,
     shortcuts,
+    visualProjectionIntent,
   ]);
   const hiddenShortcutId = activeDragId ?? dragSettlePreview?.itemId ?? null;
 
   useEffect(() => {
-    latestHoverStateRef.current = hoverState;
-  }, [hoverState]);
+    latestHoverResolutionRef.current = hoverResolution;
+  }, [hoverResolution]);
+
+  useEffect(() => {
+    hoveredMaskRef.current = hoveredMask;
+  }, [hoveredMask]);
 
   useEffect(() => {
     if (!activeDragId) {
@@ -474,11 +508,13 @@ export function FolderShortcutSurface({
     pendingDragRef.current = null;
     dragSessionRef.current = null;
     latestPointerRef.current = null;
+    recognitionPointRef.current = null;
     setActiveDragId(null);
     setDragPointer(null);
     setDragPreviewOffset(null);
     setDragLayoutSnapshot(null);
-    setHoverState(null);
+    setHoverResolution(EMPTY_FOLDER_HOVER_RESOLUTION);
+    setHoveredMask(false);
     document.body.style.userSelect = '';
   }, []);
 
@@ -550,14 +586,60 @@ export function FolderShortcutSurface({
     }, EXTRACT_HANDOFF_DELAY_MS);
   }, [performExtractHandoff]);
 
-  const resolveHoverState = useCallback((pointer: PointerPoint): FolderHoverState => {
+  const resolveFolderCompactRegions = useCallback((item: MeasuredFolderItem): CompactTargetRegions => {
+    const rootRect = rootRef.current?.getBoundingClientRect() ?? null;
+    const safeColumns = Math.max(columns, 1);
+    const columnWidth = rootRect
+      ? (rootRect.width - columnGap * Math.max(0, safeColumns - 1)) / safeColumns
+      : item.rect.width;
+    const columnIndex = item.shortcutIndex % safeColumns;
+    const cellLeft = rootRect
+      ? rootRect.left + columnIndex * (columnWidth + columnGap)
+      : item.rect.left;
+    const targetCellRegion: CompactTargetRegion = {
+      left: cellLeft,
+      top: item.rect.top,
+      right: cellLeft + columnWidth,
+      bottom: item.rect.bottom,
+      width: columnWidth,
+      height: item.rect.height,
+    };
+    const targetIconRegion: CompactTargetRegion = {
+      left: item.rect.left + item.layout.previewOffsetX,
+      top: item.rect.top + item.layout.previewOffsetY,
+      right: item.rect.left + item.layout.previewOffsetX + item.layout.previewWidth,
+      bottom: item.rect.top + item.layout.previewOffsetY + item.layout.previewHeight,
+      width: item.layout.previewWidth,
+      height: item.layout.previewHeight,
+    };
+
+    return {
+      targetCellRegion,
+      targetIconRegion,
+      targetIconHitRegion: targetIconRegion,
+    };
+  }, [columnGap, columns]);
+
+  const resolveHoverState = useCallback((pointer: PointerPoint) => {
     const session = dragSessionRef.current;
-    if (!session) return null;
+    if (!session) {
+      return {
+        hoverResolution: EMPTY_FOLDER_HOVER_RESOLUTION,
+        hoveredMask: false,
+        recognitionPoint: null,
+      };
+    }
 
     latestPointerRef.current = pointer;
     const snapshot = dragLayoutSnapshot ?? measureFolderItems(measuredItems, itemElementsRef.current);
     const activeItem = snapshot.find((item) => item.shortcut.id === session.activeShortcutId);
-    if (!activeItem) return null;
+    if (!activeItem) {
+      return {
+        hoverResolution: EMPTY_FOLDER_HOVER_RESOLUTION,
+        hoveredMask: false,
+        recognitionPoint: null,
+      };
+    }
 
     const recognitionPoint = getDragVisualCenter({
       pointer,
@@ -570,33 +652,65 @@ export function FolderShortcutSurface({
         height: activeItem.layout.previewHeight,
       },
     });
+    const activeVisualRect = buildVisualRect({
+      pointer,
+      previewOffset: session.previewOffset,
+      width: activeItem.layout.previewWidth,
+      height: activeItem.layout.previewHeight,
+      offsetX: activeItem.layout.previewOffsetX,
+      offsetY: activeItem.layout.previewOffsetY,
+    });
 
     const boundaryRect = maskBoundaryRef.current?.getBoundingClientRect() ?? null;
     if (boundaryRect && !pointInRect(recognitionPoint, boundaryRect)) {
       ensureExtractHandoffTimer();
-      return { type: 'mask' };
+      return {
+        hoverResolution: EMPTY_FOLDER_HOVER_RESOLUTION,
+        hoveredMask: true,
+        recognitionPoint,
+      };
     }
 
     clearExtractHandoffTimer();
-    const overItem = pickOverItem({
-      activeShortcutId: session.activeShortcutId,
-      measuredItems: snapshot,
-      pointer: recognitionPoint,
-    });
-    if (!overItem) return null;
-
-    const edge = getDropEdge(recognitionPoint, overItem.rect);
     return {
-      type: 'item',
-      shortcutId: overItem.shortcut.id,
-      edge: edge === 'center' ? 'after' : edge,
+      hoverResolution: resolveCompactReorderOnlyHoverResolution({
+        activeSortId: session.activeShortcutId,
+        recognitionPoint,
+        previousRecognitionPoint: recognitionPointRef.current,
+        activeVisualRect,
+        measuredItems: snapshot,
+        items: snapshot,
+        previousInteractionIntent: latestHoverResolutionRef.current.interactionIntent,
+        previousVisualProjectionIntent: latestHoverResolutionRef.current.visualProjectionIntent,
+        interactionProjectionOffsets: buildReorderProjectionOffsets({
+          shortcuts,
+          layoutSnapshot: snapshot,
+          activeShortcutId: session.activeShortcutId,
+          hoverIntent: latestHoverResolutionRef.current.interactionIntent,
+        }),
+        visualProjectionOffsets: buildReorderProjectionOffsets({
+          shortcuts,
+          layoutSnapshot: snapshot,
+          activeShortcutId: session.activeShortcutId,
+          hoverIntent: latestHoverResolutionRef.current.visualProjectionIntent,
+        }),
+        resolveRegions: resolveFolderCompactRegions,
+        columnGap,
+        rowGap,
+      }),
+      hoveredMask: false,
+      recognitionPoint,
     };
   }, [
     clearExtractHandoffTimer,
+    columnGap,
     dragLayoutSnapshot,
     ensureExtractHandoffTimer,
     maskBoundaryRef,
     measuredItems,
+    resolveFolderCompactRegions,
+    rowGap,
+    shortcuts,
   ]);
 
   useEffect(() => {
@@ -629,7 +743,10 @@ export function FolderShortcutSurface({
         setActiveDragId(nextSession.activeShortcutId);
         setDragPreviewOffset(nextSession.previewOffset);
         setDragPointer(pointer);
-        setHoverState(resolveHoverState(pointer));
+        const nextHoverState = resolveHoverState(pointer);
+        recognitionPointRef.current = nextHoverState.recognitionPoint;
+        setHoverResolution(nextHoverState.hoverResolution);
+        setHoveredMask(nextHoverState.hoveredMask);
         event.preventDefault();
         return;
       }
@@ -639,7 +756,10 @@ export function FolderShortcutSurface({
       const pointer = { x: event.clientX, y: event.clientY };
       session.pointer = pointer;
       setDragPointer(pointer);
-      setHoverState(resolveHoverState(pointer));
+      const nextHoverState = resolveHoverState(pointer);
+      recognitionPointRef.current = nextHoverState.recognitionPoint;
+      setHoverResolution(nextHoverState.hoverResolution);
+      setHoveredMask(nextHoverState.hoveredMask);
       event.preventDefault();
     };
 
@@ -652,7 +772,8 @@ export function FolderShortcutSurface({
       }
       if (!session || event.pointerId !== session.pointerId) return;
 
-      const finalHoverState = latestHoverStateRef.current;
+      const finalHoverIntent = resolveFinalHoverIntent(latestHoverResolutionRef.current);
+      const finalHoveredMask = hoveredMaskRef.current;
       const activeShortcutId = session.activeShortcutId;
       const activeShortcutIndex = session.activeShortcutIndex;
       const dragReleasePreview = (() => {
@@ -661,7 +782,7 @@ export function FolderShortcutSurface({
           shortcuts,
           layoutSnapshot: dragLayoutSnapshot,
           activeShortcutId,
-          hoverState: finalHoverState,
+          hoverIntent: finalHoverIntent,
         });
         if (!activeItem || !target) return null;
 
@@ -676,21 +797,21 @@ export function FolderShortcutSurface({
       })();
       clearDragState();
 
-      if (!finalHoverState) {
+      if (!finalHoverIntent) {
         if (dragReleasePreview) {
           startDragSettlePreview(dragReleasePreview);
         }
         return;
       }
 
-      if (finalHoverState.type === 'mask') {
+      if (finalHoveredMask) {
         return;
       }
 
-      const targetShortcutIndex = shortcuts.findIndex((shortcut) => shortcut.id === finalHoverState.shortcutId);
+      const targetShortcutIndex = shortcuts.findIndex((shortcut) => shortcut.id === finalHoverIntent.overShortcutId);
       if (targetShortcutIndex < 0) return;
 
-      const targetIndex = getReorderTargetIndex(activeShortcutIndex, targetShortcutIndex, finalHoverState.edge);
+      const targetIndex = getReorderTargetIndex(activeShortcutIndex, targetShortcutIndex, finalHoverIntent.edge);
       if (targetIndex === activeShortcutIndex) {
         if (dragReleasePreview) {
           startDragSettlePreview(dragReleasePreview);
@@ -707,7 +828,7 @@ export function FolderShortcutSurface({
         folderId,
         shortcutId: activeShortcutId,
         targetIndex,
-        edge: finalHoverState.edge,
+        edge: finalHoverIntent.edge,
       });
     };
 
@@ -753,8 +874,6 @@ export function FolderShortcutSurface({
       </div>
     );
   }
-
-  const hoveredMask = hoverState?.type === 'mask';
 
   return (
     <>

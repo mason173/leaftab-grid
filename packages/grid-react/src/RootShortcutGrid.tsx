@@ -30,12 +30,15 @@ import { GridDragItemFrame } from './GridDragItemFrame';
 import {
   resolveCompactRootHoverResolution,
   type CompactRootHoverResolution,
+  type CompactTargetRegion,
   type CompactTargetRegions,
 } from './compactRootHover';
 import {
   buildProjectedGridItemsForRootReorder,
-  buildProjectedGridItemsPreservingFixedSlotsByOrdinal,
+  buildProjectedGridItemsPreservingFrozenSlotsByOrdinal,
   buildRootShortcutGridItems,
+  resolveFinalHoverIntent,
+  shouldSkipLayoutShiftOnAnimationReenable,
   type NormalizedRootShortcutGridItemLayout,
   type RootShortcutGridItem,
   type RootShortcutGridItemLayout,
@@ -142,6 +145,27 @@ export type RootShortcutGridDropTargetRects = {
 
 export type RootShortcutGridResolveCompactTargetRegionsParams =
   RootShortcutGridResolveDropTargetRectsParams;
+
+function buildVisualRect(params: {
+  pointer: PointerPoint;
+  previewOffset: PointerPoint;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+}): CompactTargetRegion {
+  const { pointer, previewOffset, width, height, offsetX, offsetY } = params;
+  const left = pointer.x - previewOffset.x + offsetX;
+  const top = pointer.y - previewOffset.y + offsetY;
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+    width,
+    height,
+  };
+}
 
 export interface RootShortcutGridProps {
   containerHeight: number;
@@ -353,9 +377,9 @@ function projectsActiveItemToOwnSlot(params: {
   items: RootShortcutGridItem[];
   activeSortId: string;
   targetIndex: number;
-  preserveFixedSlots: boolean;
+  frozenSortIds: ReadonlySet<string> | null;
 }): boolean {
-  const { items, activeSortId, targetIndex, preserveFixedSlots } = params;
+  const { items, activeSortId, targetIndex, frozenSortIds } = params;
   const activeIndex = items.findIndex((item) => item.sortId === activeSortId);
   if (activeIndex < 0) return false;
 
@@ -363,7 +387,7 @@ function projectsActiveItemToOwnSlot(params: {
     items,
     activeSortId,
     targetIndex,
-    preserveFixedSlots,
+    frozenSortIds,
   });
   if (!projectedItems) return false;
 
@@ -377,7 +401,7 @@ function buildProjectedDropPreview(params: {
   hoverIntent: RootShortcutDropIntent | null;
   rootElement: HTMLDivElement | null;
   usesSpanAwareReorder: boolean;
-  preserveFixedSlotsDuringReorder: boolean;
+  frozenSortIds: ReadonlySet<string> | null;
   gridColumns: number;
   gridColumnWidth: number | null;
   columnGap: number;
@@ -391,7 +415,7 @@ function buildProjectedDropPreview(params: {
     hoverIntent,
     rootElement,
     usesSpanAwareReorder,
-    preserveFixedSlotsDuringReorder,
+    frozenSortIds,
     gridColumns,
     gridColumnWidth,
     columnGap,
@@ -429,7 +453,7 @@ function buildProjectedDropPreview(params: {
     items,
     activeSortId,
     targetIndex: hoverIntent.targetIndex,
-    preserveFixedSlots: preserveFixedSlotsDuringReorder,
+    frozenSortIds,
   })) {
     return {
       left: activeSnapshot.rect.left - rootRect.left + activeItem.layout.previewOffsetX,
@@ -445,7 +469,7 @@ function buildProjectedDropPreview(params: {
       items,
       activeSortId,
       targetIndex: hoverIntent.targetIndex,
-      preserveFixedSlots: preserveFixedSlotsDuringReorder,
+      frozenSortIds,
     });
     if (!projectedItems) return null;
 
@@ -501,7 +525,7 @@ function buildProjectedDragSettleTarget(params: {
   hoverIntent: RootShortcutDropIntent | null;
   rootElement: HTMLDivElement | null;
   usesSpanAwareReorder: boolean;
-  preserveFixedSlotsDuringReorder: boolean;
+  frozenSortIds: ReadonlySet<string> | null;
   gridColumns: number;
   gridColumnWidth: number | null;
   columnGap: number;
@@ -515,7 +539,7 @@ function buildProjectedDragSettleTarget(params: {
     hoverIntent,
     rootElement,
     usesSpanAwareReorder,
-    preserveFixedSlotsDuringReorder,
+    frozenSortIds,
     gridColumns,
     gridColumnWidth,
     columnGap,
@@ -546,7 +570,7 @@ function buildProjectedDragSettleTarget(params: {
     items,
     activeSortId,
     targetIndex: hoverIntent.targetIndex,
-    preserveFixedSlots: preserveFixedSlotsDuringReorder,
+    frozenSortIds,
   })) {
     return {
       left: activeSnapshot.left,
@@ -559,7 +583,7 @@ function buildProjectedDragSettleTarget(params: {
       items,
       activeSortId,
       targetIndex: hoverIntent.targetIndex,
-      preserveFixedSlots: preserveFixedSlotsDuringReorder,
+      frozenSortIds,
     });
     if (!projectedItems) return null;
 
@@ -655,8 +679,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
   const pendingDragRef = useRef<PendingDragState | null>(null);
   const dragSessionRef = useRef<DragSessionState | null>(null);
   const latestPointerRef = useRef<PointerPoint | null>(null);
-  const hoverIntentRef = useRef<RootShortcutDropIntent | null>(null);
   const hoverResolutionRef = useRef<HoverResolution>(EMPTY_HOVER_RESOLUTION);
+  const recognitionPointRef = useRef<PointerPoint | null>(null);
   const activeDragIdRef = useRef<string | null>(null);
   const dropCleanupRafRef = useRef<number | null>(null);
   const ignoreClickRef = useRef(false);
@@ -666,6 +690,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
   const autoScrollRafRef = useRef<number | null>(null);
   const projectionSettleResumeRafRef = useRef<number | null>(null);
   const consumedExternalDragTokenRef = useRef<number | null>(null);
+  const disableReorderAnimationRef = useRef(disableReorderAnimation);
 
   const {
     layoutShiftOffsets,
@@ -709,8 +734,24 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     () => items.find((item) => item.sortId === activeDragId) ?? null,
     [items, activeDragId],
   );
-  const preserveFixedSlotsDuringReorder = usesSpanAwareReorder
-    && Boolean(activeDragItem && !activeDragItem.layout.preserveSlot);
+  const frozenSpanItemSortIds = useMemo(() => {
+    if (
+      !usesSpanAwareReorder
+      || !activeDragItem
+      || activeDragItem.layout.columnSpan > 1
+      || activeDragItem.layout.rowSpan > 1
+    ) {
+      return null;
+    }
+
+    const frozenIds = new Set(
+      items
+        .filter((item) => item.sortId !== activeDragItem.sortId && (item.layout.columnSpan > 1 || item.layout.rowSpan > 1))
+        .map((item) => item.sortId),
+    );
+
+    return frozenIds.size > 0 ? frozenIds : null;
+  }, [activeDragItem, items, usesSpanAwareReorder]);
 
   const reorderSlotCandidates = useMemo(() => {
     if (!usesSpanAwareReorder || !activeDragId || !gridColumnWidth) return [];
@@ -718,17 +759,18 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     const activeItem = items.find((item) => item.sortId === activeDragId);
     if (!activeItem) return [];
 
-    if (preserveFixedSlotsDuringReorder) {
+    if (frozenSpanItemSortIds && frozenSpanItemSortIds.size > 0) {
       const remainingMovableItems = items.filter(
-        (item) => !item.layout.preserveSlot && item.sortId !== activeDragId,
+        (item) => !frozenSpanItemSortIds.has(item.sortId) && item.sortId !== activeDragId,
       );
       if (remainingMovableItems.length === 0) return [];
 
       return Array.from({ length: remainingMovableItems.length + 1 }, (_, targetMovableOrdinal) => {
-        const projection = buildProjectedGridItemsPreservingFixedSlotsByOrdinal({
+        const projection = buildProjectedGridItemsPreservingFrozenSlotsByOrdinal({
           items,
           activeSortId: activeDragId,
           targetMovableOrdinal,
+          frozenSortIds: frozenSpanItemSortIds,
         });
         if (!projection) return null;
 
@@ -811,11 +853,11 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     }).filter((candidate): candidate is ReorderSlotCandidate => Boolean(candidate));
   }, [
     activeDragId,
+    frozenSpanItemSortIds,
     columnGap,
     gridColumnWidth,
     gridColumns,
     items,
-    preserveFixedSlotsDuringReorder,
     rowGap,
     rowHeight,
     usesSpanAwareReorder,
@@ -858,7 +900,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
         items,
         activeSortId: activeDragId,
         targetIndex: projectionIntent.targetIndex,
-        preserveFixedSlots: preserveFixedSlotsDuringReorder,
+        frozenSortIds: frozenSpanItemSortIds,
       });
       if (projectedItems) {
         const projectedLayout = packGridItems({
@@ -908,10 +950,10 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     activeDragId,
     columnGap,
     dragLayoutSnapshot,
+    frozenSpanItemSortIds,
     gridColumnWidth,
     gridColumns,
     items,
-    preserveFixedSlotsDuringReorder,
     rowGap,
     rowHeight,
     usesSpanAwareReorder,
@@ -929,7 +971,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     hoverIntent: visualProjectionIntent,
     rootElement: rootRef.current,
     usesSpanAwareReorder,
-    preserveFixedSlotsDuringReorder,
+    frozenSortIds: frozenSpanItemSortIds,
     gridColumns,
     gridColumnWidth,
     columnGap,
@@ -939,10 +981,10 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     activeDragId,
     columnGap,
     dragLayoutSnapshot,
+    frozenSpanItemSortIds,
     gridColumnWidth,
     gridColumns,
     items,
-    preserveFixedSlotsDuringReorder,
     rowGap,
     rowHeight,
     usesSpanAwareReorder,
@@ -956,12 +998,23 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const skipLayoutShiftForAnimationToggle = shouldSkipLayoutShiftOnAnimationReenable({
+      previousAnimationDisabled: disableReorderAnimationRef.current,
+      animationDisabled: disableReorderAnimation,
+    });
+
     commitMeasuredItemRects({
       currentRects: measureDragItemRects(itemElementsRef.current),
-      skip: ((dragging && !hasPendingLayoutShiftSourceRects()) || suppressProjectionSettleAnimation),
+      skip: (
+        (dragging && !hasPendingLayoutShiftSourceRects())
+        || suppressProjectionSettleAnimation
+        || skipLayoutShiftForAnimationToggle
+      ),
     });
+    disableReorderAnimationRef.current = disableReorderAnimation;
   }, [
     commitMeasuredItemRects,
+    disableReorderAnimation,
     dragging,
     hasPendingLayoutShiftSourceRects,
     items,
@@ -1016,17 +1069,25 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     const activeItem = measuredItems.find((item) => item.sortId === nextActiveDragId);
     if (!activeItem) return EMPTY_HOVER_RESOLUTION;
 
-    const recognitionPoint = getDragVisualCenter({
-      pointer,
-      previewOffset: session.previewOffset,
-      activeRect: activeItem.rect,
+	    const recognitionPoint = getDragVisualCenter({
+	      pointer,
+	      previewOffset: session.previewOffset,
+	      activeRect: activeItem.rect,
       visualRect: {
         offsetX: activeItem.layout.previewOffsetX,
         offsetY: activeItem.layout.previewOffsetY,
         width: activeItem.layout.previewWidth,
         height: activeItem.layout.previewHeight,
-      },
-    });
+	      },
+	    });
+	    const activeVisualRect = buildVisualRect({
+	      pointer,
+	      previewOffset: session.previewOffset,
+	      width: activeItem.layout.previewWidth,
+	      height: activeItem.layout.previewHeight,
+	      offsetX: activeItem.layout.previewOffsetX,
+	      offsetY: activeItem.layout.previewOffsetY,
+	    });
 
     const rootRect = rootElement.getBoundingClientRect();
     if (
@@ -1038,7 +1099,13 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       return EMPTY_HOVER_RESOLUTION;
     }
 
-    const slotIntent = usesSpanAwareReorder
+    const shouldUseSlotIntent = usesSpanAwareReorder && !(
+      resolveCompactTargetRegions
+      && frozenSpanItemSortIds
+      && frozenSpanItemSortIds.size > 0
+    );
+
+    const slotIntent = shouldUseSlotIntent
       ? (() => {
           const candidate = pickClosestReorderSlot({
             point: {
@@ -1071,11 +1138,13 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
         });
       };
 
-      return resolveCompactRootHoverResolution({
-        activeSortId: nextActiveDragId,
-        recognitionPoint,
-        measuredItems,
-        items,
+        const compactResolution = resolveCompactRootHoverResolution({
+	        activeSortId: nextActiveDragId,
+	        recognitionPoint,
+	        previousRecognitionPoint: recognitionPointRef.current,
+	        activeVisualRect,
+	        measuredItems,
+	        items,
         previousInteractionIntent: currentHoverResolution.interactionIntent,
         previousVisualProjectionIntent: currentHoverResolution.visualProjectionIntent,
         interactionProjectionOffsets: currentInteractionProjectionOffsets,
@@ -1085,6 +1154,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
         columnGap,
         rowGap,
       });
+
+	      return compactResolution;
     }
 
     const overCandidate = pickOverItemCandidate({
@@ -1158,10 +1229,31 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
   const syncHoverResolution = useCallback((pointer: PointerPoint) => {
     latestPointerRef.current = pointer;
     const nextResolution = resolveHoverResolutionFromPointer(pointer);
+    const nextActiveDragId = activeDragIdRef.current;
+    const session = dragSessionRef.current;
+    const measuredItems = dragLayoutSnapshot ?? measureGridItems(items, itemElementsRef.current);
+    const activeItem = nextActiveDragId
+      ? measuredItems.find((item) => item.sortId === nextActiveDragId) ?? null
+      : null;
+    recognitionPointRef.current = (
+      activeItem
+      && session
+        ? getDragVisualCenter({
+            pointer,
+            previewOffset: session.previewOffset,
+            activeRect: activeItem.rect,
+            visualRect: {
+              offsetX: activeItem.layout.previewOffsetX,
+              offsetY: activeItem.layout.previewOffsetY,
+              width: activeItem.layout.previewWidth,
+              height: activeItem.layout.previewHeight,
+            },
+          })
+        : null
+    );
     hoverResolutionRef.current = nextResolution;
-    hoverIntentRef.current = nextResolution.interactionIntent;
     setHoverResolution(nextResolution);
-  }, [resolveHoverResolutionFromPointer]);
+  }, [dragLayoutSnapshot, items, resolveHoverResolutionFromPointer]);
 
   useEffect(() => {
     if (!externalDragSession) return;
@@ -1190,6 +1282,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     };
     dragSessionRef.current = nextSession;
     latestPointerRef.current = externalDragSession.pointer;
+    recognitionPointRef.current = null;
     autoScrollContainerRef.current = findScrollableParent(rootRef.current);
     refreshAutoScrollBounds();
     autoScrollVelocityRef.current = 0;
@@ -1264,8 +1357,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     pendingDragRef.current = null;
     dragSessionRef.current = null;
     latestPointerRef.current = null;
+    recognitionPointRef.current = null;
     hoverResolutionRef.current = EMPTY_HOVER_RESOLUTION;
-    hoverIntentRef.current = null;
     setDragging(false);
     setActiveDragId(null);
     setDragPointer(null);
@@ -1381,7 +1474,20 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       }
       if (!session || event.pointerId !== session.pointerId) return;
 
-      const finalIntent = hoverIntentRef.current;
+      const finalResolution = (() => {
+        if (event.type === 'pointercancel') {
+          return hoverResolutionRef.current;
+        }
+
+        const releasePointer = { x: event.clientX, y: event.clientY };
+        session.pointer = releasePointer;
+        latestPointerRef.current = releasePointer;
+        const resolutionAtRelease = resolveHoverResolutionFromPointer(releasePointer);
+        hoverResolutionRef.current = resolutionAtRelease;
+        return resolutionAtRelease;
+      })();
+
+      const finalIntent = resolveFinalHoverIntent(finalResolution);
       const dragReleasePreview = (() => {
         const activeItem = items.find((item) => item.sortId === session.activeSortId);
         const target = buildProjectedDragSettleTarget({
@@ -1391,7 +1497,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
           hoverIntent: finalIntent,
           rootElement: rootRef.current,
           usesSpanAwareReorder,
-          preserveFixedSlotsDuringReorder,
+          frozenSortIds: frozenSpanItemSortIds,
           gridColumns,
           gridColumnWidth,
           columnGap,
@@ -1432,8 +1538,10 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
         }
 
         captureLayoutShiftSourceRects(measureDragItemRects(itemElementsRef.current));
-        onShortcutDropIntent(finalIntent);
-        scheduleDragCleanup();
+        flushSync(() => {
+          onShortcutDropIntent(finalIntent);
+          clearDragRuntimeState();
+        });
         return;
       }
 
@@ -1477,12 +1585,12 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     clearDragSettlePreview,
     columnGap,
     dragLayoutSnapshot,
+    frozenSpanItemSortIds,
     gridColumnWidth,
     gridColumns,
     items,
     onShortcutDropIntent,
     onShortcutReorder,
-    preserveFixedSlotsDuringReorder,
     refreshAutoScrollBounds,
     rowGap,
     rowHeight,

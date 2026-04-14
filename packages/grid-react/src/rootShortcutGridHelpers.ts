@@ -1,4 +1,5 @@
 import type { Shortcut } from '@leaftab/grid-core';
+import { normalizePreviewGeometry, type GridPreviewRect } from './previewGeometry';
 
 export type RootShortcutGridItemLayout = {
   width: number;
@@ -8,6 +9,7 @@ export type RootShortcutGridItemLayout = {
   previewOffsetX?: number;
   previewOffsetY?: number;
   previewBorderRadius?: string;
+  previewRect?: GridPreviewRect;
   columnSpan?: number;
   rowSpan?: number;
   preserveSlot?: boolean;
@@ -21,6 +23,7 @@ export type NormalizedRootShortcutGridItemLayout = {
   previewOffsetX: number;
   previewOffsetY: number;
   previewBorderRadius?: string;
+  previewRect: GridPreviewRect;
   columnSpan: number;
   rowSpan: number;
   preserveSlot: boolean;
@@ -38,19 +41,26 @@ export function normalizeRootShortcutGridItemLayout(
 ): NormalizedRootShortcutGridItemLayout {
   const width = Math.max(1, layout.width);
   const height = Math.max(1, layout.height);
-  const previewWidth = Math.max(1, layout.previewWidth ?? width);
-  const previewHeight = Math.max(1, layout.previewHeight ?? height);
-  const previewOffsetX = layout.previewOffsetX ?? Math.max(0, (width - previewWidth) / 2);
-  const previewOffsetY = layout.previewOffsetY ?? Math.max(0, (height - previewHeight) / 2);
+  const previewGeometry = normalizePreviewGeometry({
+    width,
+    height,
+    previewWidth: layout.previewWidth,
+    previewHeight: layout.previewHeight,
+    previewOffsetX: layout.previewOffsetX,
+    previewOffsetY: layout.previewOffsetY,
+    previewBorderRadius: layout.previewBorderRadius,
+    previewRect: layout.previewRect,
+  });
 
   return {
     width,
     height,
-    previewWidth,
-    previewHeight,
-    previewOffsetX,
-    previewOffsetY,
-    previewBorderRadius: layout.previewBorderRadius,
+    previewWidth: previewGeometry.previewWidth,
+    previewHeight: previewGeometry.previewHeight,
+    previewOffsetX: previewGeometry.previewOffsetX,
+    previewOffsetY: previewGeometry.previewOffsetY,
+    previewBorderRadius: previewGeometry.previewBorderRadius,
+    previewRect: previewGeometry.previewRect,
     columnSpan: Math.max(1, layout.columnSpan ?? 1),
     rowSpan: Math.max(1, layout.rowSpan ?? 1),
     preserveSlot: Boolean(layout.preserveSlot),
@@ -82,17 +92,18 @@ export function buildRootShortcutGridItems<TShortcut extends Shortcut>(params: {
   });
 }
 
-export function buildProjectedGridItemsPreservingFixedSlotsByOrdinal<TShortcut extends Shortcut>(params: {
+export function buildProjectedGridItemsPreservingFrozenSlotsByOrdinal<TShortcut extends Shortcut>(params: {
   items: RootShortcutGridItem<TShortcut>[];
   activeSortId: string;
   targetMovableOrdinal: number;
+  frozenSortIds: ReadonlySet<string>;
 }): { projectedItems: RootShortcutGridItem<TShortcut>[]; activeFullIndex: number } | null {
-  const { items, activeSortId, targetMovableOrdinal } = params;
+  const { items, activeSortId, targetMovableOrdinal, frozenSortIds } = params;
   const activeItem = items.find((item) => item.sortId === activeSortId);
-  if (!activeItem || activeItem.layout.preserveSlot) return null;
+  if (!activeItem || frozenSortIds.has(activeSortId)) return null;
 
   const remainingMovableItems = items.filter(
-    (item) => !item.layout.preserveSlot && item.sortId !== activeSortId,
+    (item) => !frozenSortIds.has(item.sortId) && item.sortId !== activeSortId,
   );
   const clampedOrdinal = Math.max(0, Math.min(targetMovableOrdinal, remainingMovableItems.length));
   const projectedMovableItems = [...remainingMovableItems];
@@ -101,7 +112,7 @@ export function buildProjectedGridItemsPreservingFixedSlotsByOrdinal<TShortcut e
   let movableCursor = 0;
   let activeFullIndex = -1;
   const projectedItems = items.map((item, index) => {
-    if (item.layout.preserveSlot) {
+    if (frozenSortIds.has(item.sortId)) {
       return item;
     }
 
@@ -130,30 +141,45 @@ export function buildProjectedGridItemsForRootReorder<TShortcut extends Shortcut
   items: RootShortcutGridItem<TShortcut>[];
   activeSortId: string;
   targetIndex: number;
-  preserveFixedSlots: boolean;
+  frozenSortIds?: ReadonlySet<string> | null;
 }): RootShortcutGridItem<TShortcut>[] | null {
-  const { items, activeSortId, targetIndex, preserveFixedSlots } = params;
+  const { items, activeSortId, targetIndex, frozenSortIds } = params;
+  if (frozenSortIds && frozenSortIds.size > 0) {
+    const movablePositions = items.flatMap((item, index) => (frozenSortIds.has(item.sortId) ? [] : [index]));
+    if (movablePositions.length === 0) return null;
 
-  if (!preserveFixedSlots) {
-    const activeIndex = items.findIndex((item) => item.sortId === activeSortId);
-    if (activeIndex < 0) return null;
+    const exactMovableOrdinal = movablePositions.indexOf(targetIndex);
+    const fallbackMovableOrdinal = movablePositions.filter((position) => position < targetIndex).length;
 
-    const remainingItems = items.filter((item) => item.sortId !== activeSortId);
-    const clampedTargetIndex = Math.max(0, Math.min(targetIndex, remainingItems.length));
-    const projectedItems = [...remainingItems];
-    projectedItems.splice(clampedTargetIndex, 0, items[activeIndex]);
-    return projectedItems;
+    return buildProjectedGridItemsPreservingFrozenSlotsByOrdinal({
+      items,
+      activeSortId,
+      targetMovableOrdinal: exactMovableOrdinal >= 0 ? exactMovableOrdinal : fallbackMovableOrdinal,
+      frozenSortIds,
+    })?.projectedItems ?? null;
   }
 
-  const movablePositions = items.flatMap((item, index) => (item.layout.preserveSlot ? [] : [index]));
-  if (movablePositions.length === 0) return null;
+  const activeIndex = items.findIndex((item) => item.sortId === activeSortId);
+  if (activeIndex < 0) return null;
 
-  const exactMovableOrdinal = movablePositions.indexOf(targetIndex);
-  const fallbackMovableOrdinal = movablePositions.filter((position) => position < targetIndex).length;
+  const remainingItems = items.filter((item) => item.sortId !== activeSortId);
+  const clampedTargetIndex = Math.max(0, Math.min(targetIndex, remainingItems.length));
+  const projectedItems = [...remainingItems];
+  projectedItems.splice(clampedTargetIndex, 0, items[activeIndex]);
+  return projectedItems;
+}
 
-  return buildProjectedGridItemsPreservingFixedSlotsByOrdinal({
-    items,
-    activeSortId,
-    targetMovableOrdinal: exactMovableOrdinal >= 0 ? exactMovableOrdinal : fallbackMovableOrdinal,
-  })?.projectedItems ?? null;
+export function shouldSkipLayoutShiftOnAnimationReenable(params: {
+  previousAnimationDisabled: boolean;
+  animationDisabled: boolean;
+}): boolean {
+  const { previousAnimationDisabled, animationDisabled } = params;
+  return previousAnimationDisabled && !animationDisabled;
+}
+
+export function resolveFinalHoverIntent<TIntent>(resolution: {
+  interactionIntent: TIntent | null;
+  visualProjectionIntent: TIntent | null;
+}): TIntent | null {
+  return resolution.interactionIntent ?? resolution.visualProjectionIntent;
 }

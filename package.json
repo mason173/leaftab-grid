@@ -1,7 +1,7 @@
 {
   "name": "leaftab-grid",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "description": "Folder-aware desktop-style grid engine and React adapters extracted from Leaftab.",
   "license": "GPL-3.0-or-later",
   "packageManager": "npm@10",

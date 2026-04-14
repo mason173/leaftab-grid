@@ -1,10 +1,10 @@
-# Release Notes Draft: `v0.1.0-alpha.1`
+# Release Notes Draft: `v0.2.0-alpha.1`
 
-This draft is intended for the first public GitHub pre-release of `leaftab-grid`.
+This draft is intended for the next public GitHub pre-release of `leaftab-grid`.
 
 Suggested release title:
 
-`Leaftab Grid v0.1.0-alpha.1`
+`Leaftab Grid v0.2.0-alpha.1`
 
 Suggested release type:
 

@@ -1,7 +1,7 @@
 {
   "name": "@leaftab/grid-custom-theme-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,9 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@leaftab/grid-core": "0.1.0",
-    "@leaftab/grid-preset-leaftab": "0.1.0",
-    "@leaftab/grid-react": "0.1.0",
+    "@leaftab/grid-core": "0.2.0-alpha.1",
+    "@leaftab/grid-preset-leaftab": "0.2.0-alpha.1",
+    "@leaftab/grid-react": "0.2.0-alpha.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

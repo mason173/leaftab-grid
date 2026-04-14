@@ -155,5 +155,5 @@ A good versioning policy:
 
 ## Recommended first tags
 
-- `@leaftab/grid-core@0.1.0`
-- `@leaftab/grid-react@0.1.0`
+- `@leaftab/grid-core@0.2.0-alpha.1`
+- `@leaftab/grid-react@0.2.0-alpha.1`

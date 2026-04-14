@@ -13,7 +13,7 @@ It focuses on behaviors that typical sortable grids usually do not cover well:
 - drag a folder child back into the root grid
 - span-aware placement for larger folder tiles
 
-Current release stage: `0.1.x alpha`
+Current release stage: `0.2.x alpha`
 
 ## Why It Feels Different
 
@@ -42,7 +42,7 @@ If you want a shortcut surface that behaves like a real launcher or browser star
 - LeafTab-like integration guide: [docs/leaftab-like-host-guide.md](./docs/leaftab-like-host-guide.md)
 - Plugin convergence plan: [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md)
 - Pages deployment guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
-- Alpha release notes draft: [docs/release-notes-v0.1.0-alpha.1.md](./docs/release-notes-v0.1.0-alpha.1.md)
+- Alpha release notes draft: [docs/release-notes-v0.2.0-alpha.1.md](./docs/release-notes-v0.2.0-alpha.1.md)
 
 ## LeafTab Origin
 
@@ -335,7 +335,7 @@ What should stay in LeafTab:
 - Comparison guide: [docs/shortcut-grid-comparison.md](./docs/shortcut-grid-comparison.md)
 - Quick start: [docs/quick-start.md](./docs/quick-start.md)
 - Release process: [docs/release-process.md](./docs/release-process.md)
-- Alpha release notes draft: [docs/release-notes-v0.1.0-alpha.1.md](./docs/release-notes-v0.1.0-alpha.1.md)
+- Alpha release notes draft: [docs/release-notes-v0.2.0-alpha.1.md](./docs/release-notes-v0.2.0-alpha.1.md)
 - Execution plan: [docs/leaftab-grid-execution-plan.md](./docs/leaftab-grid-execution-plan.md)
 - LeafTab preset alignment checklist: [docs/leaftab-preset-alignment-checklist.md](./docs/leaftab-preset-alignment-checklist.md)
 - Sync guide: [docs/leaftab-grid-sync-guide.md](./docs/leaftab-grid-sync-guide.md)

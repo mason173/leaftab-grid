@@ -2,9 +2,11 @@
 
 All notable changes to this project should be recorded in this file.
 
-This repository is still in the `0.1.x alpha` stage, so the public API may continue to evolve. The goal of this changelog is not to pretend the API is already frozen. The goal is to make changes visible and easier to trust.
+This repository is still in the `0.2.x alpha` stage, so the public API may continue to evolve. The goal of this changelog is not to pretend the API is already frozen. The goal is to make changes visible and easier to trust.
 
 ## [Unreleased]
+
+## [0.2.0-alpha.1] - 2026-04-15
 
 ### Added
 

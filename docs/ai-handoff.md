@@ -6,6 +6,10 @@ This document summarizes the current state of the standalone `leaftab-grid` repo
 
 Keep `leaftab-grid` as the single source of truth for Leaftab's reusable grid engine and React adapters, while `Leaftab` consumes it as a host app through local package dependencies.
 
+Read this behavior spec before changing drag semantics:
+
+- `docs/compact-grid-rules.md`
+
 ## Current Repo Status
 
 Repo:

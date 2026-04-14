@@ -1,21 +1,54 @@
 # Leaftab Grid
 
-A folder-aware desktop-style icon grid extracted from Leaftab.
+Folder-aware desktop-style shortcut grid packages extracted from [LeafTab](https://github.com/mason173/LeafTab).
 
-Leaftab Grid is a desktop-style shortcut grid system built for icon surfaces that need more than simple sortable lists. It supports root-grid reordering, folder grouping, folder-aware drag targets, folder extraction back into the root surface, and shared drag motion behavior between root and folder grids.
+Leaftab Grid is the open-source grid engine behind LeafTab's shortcut surface. It focuses on the interaction model that typical sortable grids stop short of: merge-to-folder behavior, folder extraction back into the root surface, span-aware placement for larger folder tiles, and consistent drag motion between root and folder contexts.
 
 Current release stage: `0.1.x alpha`
 
-## Why it exists
+## Live Showcase
 
-Most open-source drag-and-drop grids stop at plain reordering. Leaftab Grid focuses on the interaction model behind desktop-like shortcut systems:
+- GitHub Pages showcase: [mason173.github.io/leaftab-grid](https://mason173.github.io/leaftab-grid/)
+- Repository: [github.com/mason173/leaftab-grid](https://github.com/mason173/leaftab-grid)
+- Pages deployment guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
+- Repository presentation kit: [docs/repository-presentation.md](./docs/repository-presentation.md)
 
-- reorder icons in a real grid
+The Pages demo is built from this repo and showcases:
+
+- root-grid reorder
+- merge two shortcuts into a folder
+- reorder inside a folder surface
+- drag a folder child back into the root grid
+- span-aware placement for large folder tiles
+
+## LeafTab Origin
+
+Leaftab Grid was extracted from the production shortcut system inside LeafTab, the browser new-tab extension where these interactions were originally developed and refined.
+
+LeafTab links:
+
+- LeafTab repository: [github.com/mason173/LeafTab](https://github.com/mason173/LeafTab)
+- Chrome Web Store: [LeafTab on Chrome Web Store](https://chromewebstore.google.com/detail/leaftab/lfogogokkkpmolbfbklchcbgdiboccdf?hl=zh-CN&gl=DE)
+- Edge Add-ons: [LeafTab on Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/leaftab/nfbdmggppgfmfbaddobdhdleppgffphn)
+- Firefox Add-ons: [LeafTab on Firefox Add-ons](https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/)
+
+## Why This Repo Exists
+
+Most open-source drag-and-drop grids stop at plain reordering. Leaftab Grid focuses on the desktop-like shortcut behaviors that matter when a host app needs more than a sortable list:
+
+- reorder icons in a true grid
 - drag shortcuts into folders
 - reorder items inside folders
-- extract items back out of folders
-- preserve consistent drag motion across root and folder surfaces
+- extract items back out to the root surface
+- preserve consistent drag motion across root and folder contexts
 - support span-aware layout behavior for larger folder tiles
+
+## Packages
+
+- `@leaftab/grid-core`
+  Pure layout, drag, and domain logic.
+- `@leaftab/grid-react`
+  React adapters for the root grid, folder surface, and shared drag-motion behavior.
 
 ## Scope
 
@@ -31,14 +64,48 @@ Current non-goals:
 
 - nested folder interactions
 - application-specific dialogs and persistence flows
-- unrelated Leaftab home-page UI
+- unrelated LeafTab page UI
 
-## Packages
+## Local Development
 
-- `@leaftab/grid-core`
-  Pure layout, drag, and domain logic.
-- `@leaftab/grid-react`
-  React adapters and interaction state for the grid UI.
+Install dependencies once:
+
+```bash
+npm install
+```
+
+Build the packages:
+
+```bash
+npm run build
+```
+
+Run the GitHub Pages showcase locally:
+
+```bash
+npm run showcase:dev
+```
+
+Build the GitHub Pages showcase:
+
+```bash
+npm run showcase:build
+```
+
+Preview the built showcase:
+
+```bash
+npm run showcase:preview
+```
+
+## Publishing The Showcase
+
+The repository already includes a GitHub Pages workflow:
+
+- Workflow: [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml)
+- Guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
+
+To turn the site on in GitHub, set the repository Pages source to `GitHub Actions`. After that, pushes to `main` will deploy the showcase automatically.
 
 ## Validation
 
@@ -48,54 +115,20 @@ Before pushing changes or publishing packages, run:
 npm run verify
 ```
 
-This verifies typecheck, tests, builds, and package publishability through `npm pack --dry-run`.
+This runs typecheck, tests, workspace builds, and package publishability checks through `npm pack --dry-run`.
 
-## Core capabilities
+## Development Workflow With LeafTab
 
-- span-aware grid packing
-- drag intent resolution for root shortcuts
-- merge and move-into-folder outcomes
-- folder reorder and extract outcomes
-- shared pointer drag session helpers
-- shared FLIP and settle-motion helpers
-
-## Design principles
-
-- desktop-style interactions first
-- folder-aware behavior is a first-class feature
-- pure domain logic should stay separate from app UI
-- host applications own dialogs, persistence, and product policy
-
-## Status
-
-Leaftab Grid is extracted from a production-oriented shortcut surface inside Leaftab and is being shaped into a standalone open-source module.
-
-Current repository status:
-
-- `@leaftab/grid-core` is a real standalone package with its own source, tests, typecheck, and build pipeline.
-- `@leaftab/grid-react` now includes reusable `RootShortcutGrid` and `FolderShortcutSurface` adapters, plus the shared drag-motion primitives they build on.
-- publishability is checked through `npm run verify`, including package builds, tests, typecheck, and `npm pack --dry-run`.
-- `snapshot/` remains as a reference boundary for the legacy extraction source.
-
-The current supported interaction model guarantees:
-
-- root shortcuts
-- folders with one child level
-
-Nested folders are intentionally outside the first public interaction contract.
-
-## Development workflow
-
-To avoid the Leaftab app repo and this package repo drifting apart, use this rule:
+To avoid the LeafTab app repo and this package repo drifting apart, use this rule:
 
 > shared grid behavior changes land here first
 
 Practical workflow:
 
-1. Change reusable drag, layout, or adapter behavior in `leaftab-grid`
-2. Run `npm run build`
-3. Rebuild `Leaftab`, which consumes this repo through local `file:` dependencies
-4. Only adjust thin host adapters or visuals inside `Leaftab` if needed
+1. Change reusable drag, layout, or adapter behavior in `leaftab-grid`.
+2. Run `npm run build` here.
+3. Rebuild `LeafTab`, which consumes this repo through local `file:` dependencies during co-development.
+4. Only adjust thin host adapters or visuals inside `LeafTab` when the shared package layer is not the right place.
 
 What belongs here:
 
@@ -105,21 +138,39 @@ What belongs here:
 - grid measurement and layout logic
 - reusable React adapters
 
-What should stay in `Leaftab`:
+What should stay in LeafTab:
 
-- card visuals
-- dialogs and toasts
+- card visuals and product styling
+- dialogs, toasts, and extension flows
 - persistence
-- app policy and scenario flows
+- app policy and scenario-specific behavior
 
-This keeps `leaftab-grid` as the single source of truth for the engine while still allowing fast local co-development with the host app.
+## Docs
 
-## Origin
+- Behavior contract: [docs/compact-grid-rules.md](./docs/compact-grid-rules.md)
+- GitHub Pages guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
+- Repository presentation kit: [docs/repository-presentation.md](./docs/repository-presentation.md)
+- Extraction architecture: [docs/shortcut-grid-extraction-architecture.md](./docs/shortcut-grid-extraction-architecture.md)
+- Migration map: [docs/leaftab-grid-migration-map.md](./docs/leaftab-grid-migration-map.md)
 
-Leaftab Grid began as the shortcut grid system inside Leaftab.
+## Status
+
+Current repository status:
+
+- `@leaftab/grid-core` is a standalone package with its own source, tests, typecheck, and build pipeline.
+- `@leaftab/grid-react` includes reusable `RootShortcutGrid` and `FolderShortcutSurface` adapters plus the shared drag-motion primitives they build on.
+- `examples/showcase` powers the GitHub Pages demo for this repo.
+- `snapshot/` remains as a reference boundary for the original extraction source.
+
+The current supported interaction model guarantees:
+
+- root shortcuts
+- folders with one child level
+
+Nested folders are intentionally outside the first public interaction contract.
 
 ## License
 
 GPL-3.0-or-later
 
-This stays aligned with the main Leaftab project license.
+This stays aligned with the main LeafTab project license.

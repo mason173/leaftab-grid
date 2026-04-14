@@ -19,6 +19,9 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "showcase:dev": "npm run dev --workspace @leaftab/grid-showcase",
+    "showcase:build": "npm run build --workspace @leaftab/grid-core && npm run build --workspace @leaftab/grid-react && npm run build --workspace @leaftab/grid-showcase",
+    "showcase:preview": "npm run preview --workspace @leaftab/grid-showcase",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run typecheck && npm run test && npm run build && node scripts/verify-packages.mjs"

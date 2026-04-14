@@ -1,6 +1,13 @@
 # Compact Grid Rules
 
-This document is the canonical behavior spec for LeafTab's current shortcut grid.
+This document is the canonical behavior spec for the shortcut grid extracted from LeafTab.
+
+LeafTab links:
+
+- Repository: <https://github.com/mason173/LeafTab>
+- Chrome Web Store: <https://chromewebstore.google.com/detail/leaftab/lfogogokkkpmolbfbklchcbgdiboccdf?hl=zh-CN&gl=DE>
+- Edge Add-ons: <https://microsoftedge.microsoft.com/addons/detail/leaftab/nfbdmggppgfmfbaddobdhdleppgffphn>
+- Firefox Add-ons: <https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/>
 
 If a future change touches drag hit-testing, merge behavior, reorder state transitions, latch rules, bridge regions, or projected drop slots, update this document in `leaftab-grid` first.
 

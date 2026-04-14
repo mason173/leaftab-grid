@@ -1,8 +1,10 @@
 # Leaftab Grid
 
-Desktop-style shortcut grid engine and React adapters extracted from [LeafTab](https://github.com/mason173/LeafTab).
+A desktop-style, folder-aware shortcut grid engine for launcher and browser start-page experiences.
 
-Leaftab Grid is the open-source interaction layer behind LeafTab's shortcut surface. It focuses on behaviors that typical sortable grids usually do not cover well:
+Leaftab Grid is the open-source interaction layer extracted from [LeafTab](https://github.com/mason173/LeafTab). It is built for shortcut surfaces that need to feel more like a desktop, launcher, or new-tab workspace than a generic sortable list.
+
+It focuses on behaviors that typical sortable grids usually do not cover well:
 
 - true root-grid reorder
 - merge two shortcuts into a folder
@@ -12,6 +14,18 @@ Leaftab Grid is the open-source interaction layer behind LeafTab's shortcut surf
 - span-aware placement for larger folder tiles
 
 Current release stage: `0.1.x alpha`
+
+## Why It Feels Different
+
+Many drag-and-drop libraries are intentionally generic. Many grid libraries are intentionally dashboard-oriented. Leaftab Grid is different because it is opinionated about shortcut-workspace behavior:
+
+- icon-body hit regions matter, not only whole-cell rectangles
+- merge and reorder must coexist cleanly in the same surface
+- folders are part of the interaction model, not an afterthought
+- larger tiles must keep their slot and not collapse the whole layout
+- root-grid and folder-surface interactions should feel like one connected system
+
+If you want a shortcut surface that behaves like a real launcher or browser start page, this repo is designed for that use case.
 
 ## Live Links
 
@@ -28,6 +42,7 @@ Current release stage: `0.1.x alpha`
 - LeafTab-like integration guide: [docs/leaftab-like-host-guide.md](./docs/leaftab-like-host-guide.md)
 - Plugin convergence plan: [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md)
 - Pages deployment guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
+- Alpha release notes draft: [docs/release-notes-v0.1.0-alpha.1.md](./docs/release-notes-v0.1.0-alpha.1.md)
 
 ## LeafTab Origin
 
@@ -40,7 +55,7 @@ LeafTab links:
 - Edge Add-ons: [LeafTab on Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/leaftab/nfbdmggppgfmfbaddobdhdleppgffphn)
 - Firefox Add-ons: [LeafTab on Firefox Add-ons](https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/)
 
-## What This Repo Is
+## What This Repo Gives You
 
 This repository publishes the reusable grid system, not the entire LeafTab product shell.
 
@@ -54,7 +69,7 @@ It gives you:
 - a custom-theme example proving the engine can support a very different host look
 - a showcase host app that demonstrates the open-source packages directly
 
-It does not currently give you the full LeafTab product preset out of the box.
+It does not currently give you the full LeafTab product shell out of the box.
 
 That means this repo does not try to publish every LeafTab-specific detail as a stable public API, including:
 
@@ -67,11 +82,19 @@ If you want the interaction model, this repo is the source of truth.
 
 If you want a 1:1 LeafTab look and feel, you still need a host layer that matches LeafTab's layout inputs, target-region math, and visual rendering.
 
-## Why It Exists
+## Current Public Shape
 
-Many drag-and-drop libraries are intentionally generic. Many grid libraries are intentionally dashboard-oriented. Leaftab Grid is different: it is focused on shortcut surfaces that behave more like a desktop launcher or browser start page.
+The repository now has three clear public layers:
 
-This repo exists to make that behavior reusable outside the LeafTab app itself.
+- `@leaftab/grid-core`
+- `@leaftab/grid-react`
+- `@leaftab/grid-preset-leaftab`
+
+That shape matters because it makes the project easier to understand and easier to adopt:
+
+- `grid-core` owns behavior and tree operations
+- `grid-react` owns reusable interaction shells
+- `grid-preset-leaftab` owns the LeafTab-like host wiring and preset helpers
 
 ## Packages
 
@@ -112,6 +135,13 @@ This package currently starts with:
 - a bundled folder-surface preset helper for LeafTab-like hosts
 - LeafTab-like card and folder preview renderers
 
+## Recommended Starting Points
+
+- Start from `examples/minimal` if you want the smallest practical integration path.
+- Start from `examples/leaftab-like` if you want something much closer to the real LeafTab interaction feel.
+- Start from `examples/custom-theme` if you want proof that the engine can support a clearly different host look.
+- Use `examples/showcase` when you want the public demo shell and GitHub Pages presentation layer.
+
 ## What The Public Contract Covers
 
 The first public contract focuses on:
@@ -145,6 +175,18 @@ For the detailed path, see [docs/leaftab-like-host-guide.md](./docs/leaftab-like
 
 If your goal is eventual convergence with the real LeafTab app instead of building an unrelated host, also see [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md).
 
+## LeafTab Relationship
+
+LeafTab remains the reference implementation for anything described as `LeafTab-like`.
+
+That means:
+
+- this repo is not trying to invent a second unrelated "LeafTab style"
+- the preset converges toward the real app
+- the plugin is now gradually beginning to consume shared preset wiring back from this repo
+
+The long-term goal is not just to extract code once. The goal is to reduce duplicate host logic over time without flattening the LeafTab product into a generic demo.
+
 ## Showcase Expectations
 
 The GitHub Pages showcase is a demo host for the open-source packages. It is meant to make the interaction model easy to inspect and test.
@@ -161,17 +203,6 @@ What it is not for:
 
 - serving as the complete LeafTab app
 - freezing LeafTab's exact product visuals as the only valid host presentation
-
-## Examples
-
-- `examples/custom-theme`
-  Themed reference host for teams that want to keep the grid behavior contract while building a clearly different product aesthetic.
-- `examples/leaftab-like`
-  Recommended reference host when you want a close-to-LeafTab starting point built with `grid-core`, `grid-react`, and `grid-preset-leaftab`.
-- `examples/showcase`
-  Product-style public demo host built on the workspace packages.
-- `examples/minimal`
-  Smallest local example showing how to wire `grid-core` and `grid-react` together without the full preset layer.
 
 ## Local Development
 
@@ -304,10 +335,12 @@ What should stay in LeafTab:
 - Comparison guide: [docs/shortcut-grid-comparison.md](./docs/shortcut-grid-comparison.md)
 - Quick start: [docs/quick-start.md](./docs/quick-start.md)
 - Release process: [docs/release-process.md](./docs/release-process.md)
+- Alpha release notes draft: [docs/release-notes-v0.1.0-alpha.1.md](./docs/release-notes-v0.1.0-alpha.1.md)
 - Execution plan: [docs/leaftab-grid-execution-plan.md](./docs/leaftab-grid-execution-plan.md)
 - LeafTab preset alignment checklist: [docs/leaftab-preset-alignment-checklist.md](./docs/leaftab-preset-alignment-checklist.md)
 - Sync guide: [docs/leaftab-grid-sync-guide.md](./docs/leaftab-grid-sync-guide.md)
 - LeafTab-like integration guide: [docs/leaftab-like-host-guide.md](./docs/leaftab-like-host-guide.md)
+- Plugin convergence plan: [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md)
 - GitHub Pages guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
 - Repository presentation kit: [docs/repository-presentation.md](./docs/repository-presentation.md)
 - Extraction architecture: [docs/shortcut-grid-extraction-architecture.md](./docs/shortcut-grid-extraction-architecture.md)
@@ -319,8 +352,10 @@ Current repository status:
 
 - `@leaftab/grid-core` is a standalone package with its own source, tests, typecheck, and build pipeline.
 - `@leaftab/grid-react` includes reusable `RootShortcutGrid` and `FolderShortcutSurface` adapters plus the shared drag-motion primitives they build on.
+- `@leaftab/grid-preset-leaftab` now provides LeafTab-like preset helpers for root-grid and folder-surface host wiring.
 - `examples/showcase` powers the GitHub Pages demo for this repo.
 - the public behavior layer is already test-covered
+- the real LeafTab app has started consuming selected shared preset wiring back from this repo
 
 The current supported interaction model guarantees:
 

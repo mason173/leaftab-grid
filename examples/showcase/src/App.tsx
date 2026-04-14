@@ -27,7 +27,6 @@ const LEAFTAB_EDGE_URL = 'https://microsoftedge.microsoft.com/addons/detail/leaf
 const LEAFTAB_FIREFOX_URL = 'https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/';
 const GRID_REPO_URL = 'https://github.com/mason173/leaftab-grid';
 const RULES_DOC_URL = `${GRID_REPO_URL}/blob/main/docs/compact-grid-rules.md`;
-const PAGES_DOC_URL = `${GRID_REPO_URL}/blob/main/docs/github-pages-showcase.md`;
 
 type DemoLogEntry = {
   id: string;
@@ -35,39 +34,11 @@ type DemoLogEntry = {
   text: string;
 };
 
-const FEATURE_CALLOUTS = [
-  {
-    title: 'Desktop-style reorder',
-    body: 'The root surface preserves grid intent instead of collapsing into a list-like drag model.',
-  },
-  {
-    title: 'Folder-aware merge',
-    body: 'Center drops create or target folders, while edge-biased drops stay in reorder mode.',
-  },
-  {
-    title: 'Continuous extraction',
-    body: 'Dragging a child out of a folder can continue as a root-grid session without breaking pointer flow.',
-  },
-] as const;
-
-const PACKAGE_SUMMARIES = [
-  {
-    name: '@leaftab/grid-core',
-    summary: 'Pure layout, drag, and tree-operation logic.',
-    install: 'npm install @leaftab/grid-core',
-  },
-  {
-    name: '@leaftab/grid-react',
-    summary: 'Production-style React adapters for root and folder surfaces.',
-    install: 'npm install @leaftab/grid-react',
-  },
-] as const;
-
-const WORKFLOW_STEPS = [
-  'Change the shared behavior in `leaftab-grid` first.',
-  'Validate the package layer with `npm run verify`.',
-  'Use the GitHub Pages showcase as a human-readable behavior demo.',
-  'Then rebuild LeafTab, which consumes this repo during co-development.',
+const DEMO_NOTES = [
+  '拖动卡片到边缘，看真正的 grid reorder，而不是列表排序。',
+  '把一个链接压到另一个链接中心，直接合并成文件夹。',
+  '打开文件夹后，把子项从右侧面板拖回根网格。',
+  '大文件夹会保留它的占位，不会把布局挤乱。',
 ] as const;
 
 function createLink(
@@ -159,10 +130,10 @@ export function App() {
 
   const compactViewport = viewportWidth < 980;
   const gridColumns = compactViewport ? 4 : preferredColumns;
-  const rowHeight = compactViewport ? 102 : 122;
-  const rowGap = compactViewport ? 14 : 18;
-  const columnGap = compactViewport ? 14 : 18;
-  const containerHeight = compactViewport ? 540 : 620;
+  const rowHeight = compactViewport ? 108 : 132;
+  const rowGap = compactViewport ? 14 : 20;
+  const columnGap = compactViewport ? 14 : 20;
+  const containerHeight = compactViewport ? 600 : 760;
 
   const openFolder = openFolderId ? findShortcutById(shortcuts, openFolderId) : null;
   const activeFolder = isShortcutFolder(openFolder) ? openFolder : null;
@@ -458,48 +429,37 @@ export function App() {
         </a>
 
         <div className="topbar__links">
-          <a href="#playground">Playground</a>
-          <a href="#packages">Packages</a>
-          <a href="#origin">Origin</a>
-          <a href={PAGES_DOC_URL} target="_blank" rel="noreferrer">Pages guide</a>
+          <a href="#demo">Demo</a>
+          <a href="#source">Source</a>
+          <a href={RULES_DOC_URL} target="_blank" rel="noreferrer">Rules</a>
         </div>
       </nav>
 
-      <header className="hero-card" id="top">
+      <header className="hero-card hero-card--focused" id="top">
         <div className="hero-card__copy">
-          <p className="eyebrow">Leaftab Grid GitHub Pages Showcase</p>
-          <h1>Desktop-style shortcut grids, extracted from LeafTab and staged as a live playground.</h1>
+          <p className="eyebrow">Leaftab Grid Showcase</p>
+          <h1>首屏先看网格本体，不先看文案。</h1>
           <p className="hero-card__lede">
-            This repo now ships with a Pages-ready demo that highlights the behaviors that made the
-            original LeafTab shortcut surface feel native: root-grid reorder, folder merge, folder
-            extraction, and span-aware placement for large folder tiles.
+            这个站现在把主界面提到最前面。核心展示就是根网格如何排布、如何合并文件夹、如何把文件夹子项再拖回根网格，以及大文件夹如何稳定占位。
           </p>
 
           <div className="hero-card__actions">
-            <a className="cta cta-primary" href={GRID_REPO_URL} target="_blank" rel="noreferrer">
-              View grid source
+            <a className="cta cta-primary" href="#demo">
+              直接看 Demo
             </a>
-            <a className="cta cta-secondary" href={LEAFTAB_REPO_URL} target="_blank" rel="noreferrer">
-              View LeafTab origin
+            <a className="cta cta-secondary" href={GRID_REPO_URL} target="_blank" rel="noreferrer">
+              查看仓库
             </a>
           </div>
-
-          <ul className="hero-card__chips" aria-label="Grid capabilities">
-            <li>Root reorder</li>
-            <li>Merge into folders</li>
-            <li>Folder extraction</li>
-            <li>Large tile packing</li>
-            <li>React adapters</li>
-          </ul>
         </div>
 
-        <div className="hero-card__stats">
+        <div className="hero-card__stats hero-card__stats--inline">
           <div className="stat-card">
-            <span>Root items</span>
+            <span>Root Items</span>
             <strong>{shortcuts.length}</strong>
           </div>
           <div className="stat-card">
-            <span>Total links</span>
+            <span>Total Links</span>
             <strong>{linkCount}</strong>
           </div>
           <div className="stat-card">
@@ -509,53 +469,43 @@ export function App() {
         </div>
       </header>
 
-      <section className="feature-band" aria-label="Core feature callouts">
-        {FEATURE_CALLOUTS.map((feature) => (
-          <article key={feature.title} className="feature-band__card">
-            <p className="eyebrow">Why it matters</p>
-            <h2>{feature.title}</h2>
-            <p>{feature.body}</p>
-          </article>
-        ))}
-      </section>
-
-      <main className="showcase-layout">
-        <section className="surface-panel" id="playground">
-          <div className="surface-panel__header">
-            <div>
-              <p className="eyebrow">Interactive Surface</p>
-              <h2>Try the exact interaction contract that powers the extracted engine.</h2>
-            </div>
-
-            <div className="surface-panel__controls">
-              <div className="segmented-control" aria-label="Desktop columns">
-                {DESKTOP_COLUMNS.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={value === preferredColumns ? 'is-active' : undefined}
-                    onClick={() => setPreferredColumns(value)}
-                    disabled={compactViewport}
-                  >
-                    {value} cols
-                  </button>
-                ))}
+      <main className="showcase-main">
+        <section className="demo-stage" id="demo">
+          <div className="demo-stage__canvas">
+            <div className="demo-stage__toolbar">
+              <div>
+                <p className="eyebrow">Primary Interface</p>
+                <h2>这就是主界面，网格系统本身就是主角。</h2>
               </div>
 
-              <button type="button" className="cta cta-ghost" onClick={handleResetDemo}>
-                Reset demo
-              </button>
-            </div>
-          </div>
+              <div className="demo-stage__controls">
+                <div className="segmented-control" aria-label="Desktop columns">
+                  {DESKTOP_COLUMNS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={value === preferredColumns ? 'is-active' : undefined}
+                      onClick={() => setPreferredColumns(value)}
+                      disabled={compactViewport}
+                    >
+                      {value} cols
+                    </button>
+                  ))}
+                </div>
 
-          <div className="playground-grid">
-            <div className="surface-canvas">
+                <button type="button" className="cta cta-ghost" onClick={handleResetDemo}>
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div className="surface-canvas surface-canvas--hero">
               <div className="surface-canvas__toolbar">
-                <span>Root surface</span>
-                <span>{compactViewport ? 'Mobile-fit layout' : `Desktop layout: ${gridColumns} columns`}</span>
+                <span>Root grid</span>
+                <span>{compactViewport ? 'Mobile-fit layout' : `Desktop layout · ${gridColumns} columns`}</span>
               </div>
 
-              <div className="surface-canvas__viewport">
+              <div className="surface-canvas__viewport surface-canvas__viewport--hero">
                 <RootShortcutGrid
                   containerHeight={containerHeight}
                   shortcuts={shortcuts}
@@ -597,11 +547,23 @@ export function App() {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="folder-dock">
+          <aside className="demo-stage__rail">
+            <section className="info-card info-card--dense">
+              <p className="eyebrow">Focus</p>
+              <h3>看这四件事就够了</h3>
+              <ul className="task-list task-list--stacked">
+                {DEMO_NOTES.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="folder-dock folder-dock--hero">
               <div className="surface-canvas__toolbar">
-                <span>Folder surface</span>
-                <span>{activeFolder ? activeFolder.title : 'Click a folder to inspect it'}</span>
+                <span>Folder panel</span>
+                <span>{activeFolder ? activeFolder.title : 'Click a folder in the grid'}</span>
               </div>
 
               <div ref={folderMaskRef} className="folder-dock__viewport">
@@ -622,8 +584,7 @@ export function App() {
                     </div>
 
                     <p className="folder-dock__hint">
-                      Reorder children here, or drag one outside the panel to promote it back into
-                      the root surface with a continuous pointer session.
+                      右侧只负责补充展示文件夹内部的行为，真正的主视觉还是左边的根网格。
                     </p>
 
                     <FolderShortcutSurface
@@ -660,122 +621,59 @@ export function App() {
                   </>
                 ) : (
                   <div className="folder-empty">
-                    <p className="eyebrow">What to try</p>
-                    <h3>Open a folder or create a new one by merging two links.</h3>
+                    <p className="eyebrow">Folder Behavior</p>
+                    <h3>点左边网格里的文件夹。</h3>
                     <p>
-                      The small folder demonstrates compact reorder logic. The large folder shows
-                      span-aware packing and how the root surface preserves big tiles while smaller
-                      items move around them.
+                      这里会显示文件夹内部的重排，以及拖出到根网格时的连续拖拽行为。
                     </p>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </section>
+
+            <section className="info-card info-card--dense">
+              <p className="eyebrow">Live Log</p>
+              <h3>交互结果</h3>
+              <div className="event-log" aria-live="polite">
+                {logs.map((entry) => (
+                  <div key={entry.id} className={`event-log__item event-log__item--${entry.tone}`}>
+                    {entry.text}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </aside>
         </section>
 
-        <aside className="info-rail">
-          <section className="info-card">
-            <p className="eyebrow">Behavior Checklist</p>
-            <h3>Recommended interactions</h3>
-            <ul className="task-list">
-              <li>Drag a root shortcut to a leading edge to reorder without merging.</li>
-              <li>Drop one link on top of another to create a folder.</li>
-              <li>Open a folder and reorder children inside the compact surface.</li>
-              <li>Drag a folder child out of the panel and release in the root grid.</li>
-              <li>Notice how the large folder keeps its span-aware footprint.</li>
-            </ul>
-          </section>
+        <section className="source-strip" id="source">
+          <article className="source-card">
+            <p className="eyebrow">Packages</p>
+            <h3>两个包，围绕同一套交互规则。</h3>
+            <p><code>@leaftab/grid-core</code> 负责布局、拖拽和树操作，<code>@leaftab/grid-react</code> 负责根网格和文件夹表面的 React 适配。</p>
+          </article>
 
-          <section className="info-card">
+          <article className="source-card">
             <p className="eyebrow">Origin</p>
-            <h3>Extracted from the LeafTab new-tab extension</h3>
-            <p>
-              Leaftab Grid is the open-source grid engine that was split out of LeafTab. The product
-              repo and live browser distributions stay linked here so the relationship is explicit.
-            </p>
-
+            <h3>它是从 LeafTab 抽出来的。</h3>
+            <p>这个网格系统原本来自 LeafTab 新标签页产品，现在作为独立开源仓库继续演进。</p>
             <div className="link-stack">
-              <a href={LEAFTAB_REPO_URL} target="_blank" rel="noreferrer">LeafTab GitHub repository</a>
-              <a href={LEAFTAB_CHROME_URL} target="_blank" rel="noreferrer">LeafTab on Chrome Web Store</a>
-              <a href={LEAFTAB_EDGE_URL} target="_blank" rel="noreferrer">LeafTab on Edge Add-ons</a>
-              <a href={LEAFTAB_FIREFOX_URL} target="_blank" rel="noreferrer">LeafTab on Firefox Add-ons</a>
+              <a href={LEAFTAB_REPO_URL} target="_blank" rel="noreferrer">LeafTab GitHub</a>
+              <a href={LEAFTAB_CHROME_URL} target="_blank" rel="noreferrer">Chrome Web Store</a>
+              <a href={LEAFTAB_EDGE_URL} target="_blank" rel="noreferrer">Edge Add-ons</a>
+              <a href={LEAFTAB_FIREFOX_URL} target="_blank" rel="noreferrer">Firefox Add-ons</a>
             </div>
-          </section>
+          </article>
 
-          <section className="info-card">
-            <p className="eyebrow">Event Log</p>
-            <h3>Latest interaction outcomes</h3>
-            <div className="event-log" aria-live="polite">
-              {logs.map((entry) => (
-                <div key={entry.id} className={`event-log__item event-log__item--${entry.tone}`}>
-                  {entry.text}
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
-      </main>
-
-      <section className="knowledge-grid">
-        <article className="knowledge-card" id="packages">
-          <p className="eyebrow">Packages</p>
-          <h2>Two packages, one interaction contract.</h2>
-          <div className="package-grid">
-            {PACKAGE_SUMMARIES.map((pkg) => (
-              <div key={pkg.name} className="package-card">
-                <strong>{pkg.name}</strong>
-                <p>{pkg.summary}</p>
-                <code>{pkg.install}</code>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="knowledge-card">
-          <p className="eyebrow">Workflow</p>
-          <h2>How this repo fits into the larger LeafTab development loop.</h2>
-          <ol className="workflow-list">
-            {WORKFLOW_STEPS.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-          <div className="knowledge-card__actions">
+          <article className="source-card">
+            <p className="eyebrow">Contract</p>
+            <h3>行为规则单独维护。</h3>
+            <p>如果后面要继续调拖拽命中、合并逻辑、桥接区或者大文件夹占位，这里有清晰的行为文档作为单一真相源。</p>
             <a className="cta cta-secondary" href={RULES_DOC_URL} target="_blank" rel="noreferrer">
               Read behavior rules
             </a>
-            <a className="cta cta-secondary" href={PAGES_DOC_URL} target="_blank" rel="noreferrer">
-              Read Pages guide
-            </a>
-          </div>
-        </article>
-
-        <article className="knowledge-card" id="origin">
-          <p className="eyebrow">Open-source origin</p>
-          <h2>Leaftab Grid comes from the production shortcut system inside LeafTab.</h2>
-          <p>
-            The purpose of this repository is to keep the grid engine, drag logic, and reusable React
-            adapters evolving in one open place, while the full new-tab product can continue shipping
-            on top of it.
-          </p>
-          <div className="link-stack">
-            <a href={GRID_REPO_URL} target="_blank" rel="noreferrer">Leaftab Grid repository</a>
-            <a href={LEAFTAB_REPO_URL} target="_blank" rel="noreferrer">LeafTab repository</a>
-            <a href={LEAFTAB_CHROME_URL} target="_blank" rel="noreferrer">LeafTab on Chrome Web Store</a>
-            <a href={LEAFTAB_EDGE_URL} target="_blank" rel="noreferrer">LeafTab on Edge Add-ons</a>
-            <a href={LEAFTAB_FIREFOX_URL} target="_blank" rel="noreferrer">LeafTab on Firefox Add-ons</a>
-          </div>
-        </article>
-      </section>
-
-      <footer className="showcase-footer">
-        <p>
-          Leaftab Grid is GPL-3.0-or-later and stays aligned with the main LeafTab project license.
-        </p>
-        <a href={GRID_REPO_URL} target="_blank" rel="noreferrer">
-          github.com/mason173/leaftab-grid
-        </a>
-      </footer>
+          </article>
+        </section>
+      </main>
     </div>
   );
 }

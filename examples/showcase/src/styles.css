@@ -130,6 +130,11 @@ button {
   border-radius: var(--radius-xl);
 }
 
+.hero-card--focused {
+  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.9fr);
+  align-items: end;
+}
+
 .feature-band,
 .knowledge-grid {
   display: grid;
@@ -288,6 +293,10 @@ button {
   gap: 12px;
 }
 
+.hero-card__stats--inline {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .stat-card {
   display: grid;
   gap: 8px;
@@ -345,19 +354,25 @@ button {
   color: var(--accent-strong);
 }
 
-.showcase-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
-  gap: 20px;
+.showcase-main {
   margin-top: 22px;
 }
 
-.surface-panel {
-  padding: 22px;
-  border-radius: var(--radius-xl);
+.demo-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.72fr);
+  gap: 18px;
+  align-items: start;
 }
 
-.surface-panel__header,
+.demo-stage__canvas,
+.demo-stage__rail {
+  display: grid;
+  gap: 18px;
+}
+
+.demo-stage__toolbar,
+.demo-stage__controls,
 .surface-canvas__toolbar,
 .folder-dock__headline {
   display: flex;
@@ -366,8 +381,10 @@ button {
   gap: 16px;
 }
 
-.surface-panel__header h2 {
+.demo-stage__toolbar h2 {
   font-size: clamp(1.45rem, 2vw, 2rem);
+  margin: 0;
+  letter-spacing: -0.04em;
 }
 
 .segmented-control {
@@ -396,19 +413,16 @@ button {
   cursor: not-allowed;
 }
 
-.playground-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
-  gap: 18px;
-  margin-top: 20px;
-}
-
 .surface-canvas,
 .folder-dock {
   border-radius: 28px;
   background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(241, 233, 220, 0.92));
   border: 1px solid rgba(103, 74, 37, 0.14);
   padding: 18px;
+}
+
+.surface-canvas--hero {
+  padding: 22px;
 }
 
 .surface-canvas__toolbar {
@@ -435,6 +449,11 @@ button {
   overflow: hidden;
 }
 
+.surface-canvas__viewport--hero {
+  min-height: 780px;
+  padding: 22px;
+}
+
 .folder-dock__viewport {
   position: relative;
   min-height: 100%;
@@ -443,6 +462,10 @@ button {
   background: rgba(255, 253, 249, 0.86);
   border: 1px solid rgba(103, 74, 37, 0.1);
   overflow: hidden;
+}
+
+.folder-dock--hero .folder-dock__viewport {
+  min-height: 520px;
 }
 
 .folder-dock__hint {
@@ -589,6 +612,12 @@ button {
   border-radius: 28px;
 }
 
+.info-card--dense {
+  border: 1px solid rgba(103, 74, 37, 0.14);
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.82), rgba(242, 235, 224, 0.78));
+  box-shadow: var(--shadow);
+}
+
 .link-stack {
   display: grid;
   gap: 10px;
@@ -627,26 +656,49 @@ button {
   color: #92400e;
 }
 
-.showcase-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.source-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
   margin-top: 22px;
-  padding: 18px 4px 0;
-  color: var(--muted);
 }
 
-.showcase-footer p {
+.source-card {
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid rgba(103, 74, 37, 0.14);
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.82), rgba(242, 235, 224, 0.78));
+  box-shadow: var(--shadow);
+}
+
+.source-card h3 {
+  margin: 0 0 10px;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  letter-spacing: -0.04em;
+}
+
+.source-card p {
   margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.task-list--stacked {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 @media (max-width: 1180px) {
   .hero-card,
-  .showcase-layout,
-  .playground-grid,
+  .demo-stage,
+  .source-strip,
   .feature-band,
   .package-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card__stats--inline {
     grid-template-columns: 1fr;
   }
 }
@@ -657,16 +709,14 @@ button {
   }
 
   .hero-card,
-  .surface-panel,
   .info-card {
     border-radius: 24px;
   }
 
-  .surface-panel__header,
-  .surface-panel__controls,
+  .demo-stage__toolbar,
+  .demo-stage__controls,
   .surface-canvas__toolbar,
   .folder-dock__headline,
-  .showcase-footer,
   .topbar {
     align-items: flex-start;
     flex-direction: column;
@@ -677,6 +727,10 @@ button {
   .surface-canvas__viewport,
   .folder-dock__viewport {
     border-radius: 22px;
+  }
+
+  .surface-canvas__viewport--hero {
+    min-height: 620px;
   }
 
   .topbar {

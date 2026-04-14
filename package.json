@@ -24,7 +24,7 @@
     "showcase:preview": "npm run preview --workspace @leaftab/grid-showcase",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify": "npm run typecheck && npm run test && npm run build && node scripts/verify-packages.mjs"
+    "verify": "npm run build && npm run typecheck && npm run test && node scripts/verify-packages.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

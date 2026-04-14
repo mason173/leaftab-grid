@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-@source "../../../packages/grid-react/src/**/*.{ts,tsx}";
-@source "../../../packages/grid-preset-leaftab/src/**/*.{ts,tsx}";
+@source "../../../packages/workspace-react/src/**/*.{ts,tsx}";
+@source "../../../packages/workspace-preset-leaftab/src/**/*.{ts,tsx}";
 @source "./**/*.{ts,tsx}";
 
 :root {

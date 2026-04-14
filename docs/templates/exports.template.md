@@ -1,8 +1,8 @@
-# Leaftab Grid First Public Exports
+# Leaftab Workspace First Public Exports
 
 These are recommended `src/index.ts` templates for the first standalone release.
 
-## `packages/grid-core/src/index.ts`
+## `packages/workspace-core/src/index.ts`
 
 ```ts
 export * from './drag/types';
@@ -21,7 +21,7 @@ export * from './model/constraints';
 export * from './domain/dropIntents';
 ```
 
-## `packages/grid-react/src/index.ts`
+## `packages/workspace-react/src/index.ts`
 
 ```ts
 export * from './drag/useDragMotionState';

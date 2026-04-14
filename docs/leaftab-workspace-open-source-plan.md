@@ -1,18 +1,18 @@
-# Leaftab Grid Open Source Plan
+# Leaftab Workspace Open Source Plan
 
-`Leaftab Grid` is the folder-aware desktop-style icon grid extracted from Leaftab.
+`Leaftab Workspace` is the folder-aware desktop-style icon grid extracted from Leaftab.
 
 This document defines the first open-source shape for the project without forcing a large repo restructure inside the main app first.
 
 ## Project identity
 
-- Project name: `Leaftab Grid`
-- Suggested repository name: `leaftab-grid`
+- Project name: `Leaftab Workspace`
+- Suggested repository name: `leaftab-workspace`
 - Suggested npm scope: `@leaftab`
 - Suggested license: `GPL-3.0-or-later`
 - Suggested packages:
-  - `@leaftab/grid-core`
-  - `@leaftab/grid-react`
+  - `@leaftab/workspace-core`
+  - `@leaftab/workspace-react`
 
 ## Positioning
 
@@ -22,7 +22,7 @@ Use this as the short description:
 
 Use this as the longer description:
 
-> Leaftab Grid is a desktop-style icon grid system with reorderable shortcut layouts, folder grouping, folder extraction, span-aware placement, and drag motion designed for real shortcut surfaces rather than simple sortable lists.
+> Leaftab Workspace is a desktop-style icon grid system with reorderable shortcut layouts, folder grouping, folder extraction, span-aware placement, and drag motion designed for real shortcut surfaces rather than simple sortable lists.
 
 ## What should be open-sourced first
 
@@ -48,7 +48,7 @@ Keep app-only concerns out of the first release:
 
 ## Recommended package split
 
-### `@leaftab/grid-core`
+### `@leaftab/workspace-core`
 
 Owns pure logic and non-React helpers:
 
@@ -63,7 +63,7 @@ Owns pure logic and non-React helpers:
 - `src/features/shortcuts/drag/dragMotion.ts`
 - `src/features/shortcuts/drag/types.ts`
 
-### `@leaftab/grid-react`
+### `@leaftab/workspace-react`
 
 Owns React-facing adapters:
 
@@ -93,7 +93,7 @@ Recommended workflow:
 
 1. Keep improving the grid inside the Leaftab repo.
 2. Treat the grid-specific folders as the extraction boundary.
-3. Mirror those folders into the standalone `leaftab-grid` repo when you are ready.
+3. Mirror those folders into the standalone `leaftab-workspace` repo when you are ready.
 4. Do not maintain two divergent hand-edited copies.
 
 That means:
@@ -118,7 +118,7 @@ Best when the API is still settling.
 
 Best when you want a public identity immediately.
 
-- create `leaftab-grid`
+- create `leaftab-workspace`
 - copy only the extracted boundary files into that repo
 - keep this repo as source of truth until the standalone repo becomes the primary package repo
 
@@ -143,7 +143,7 @@ A good initial public API would be:
 
 Before the first public release:
 
-1. Copy or extract the README draft from `docs/leaftab-grid-readme.md`
+1. Copy or extract the README draft from `docs/leaftab-workspace-readme.md`
 2. Keep the license aligned with Leaftab as `GPL-3.0-or-later`
 3. Add package entrypoints matching the chosen split
 4. Export only the intended public surface
@@ -157,10 +157,10 @@ Before the first public release:
 
 ## First repo bootstrap checklist
 
-If you create the standalone `leaftab-grid` repository now, the first batch to copy or extract should be:
+If you create the standalone `leaftab-workspace` repository now, the first batch to copy or extract should be:
 
 - `LICENSE`
-- `docs/leaftab-grid-readme.md` as the new repo `README.md`
+- `docs/leaftab-workspace-readme.md` as the new repo `README.md`
 - `src/features/shortcuts/model/*`
 - `src/features/shortcuts/domain/dropIntents.ts`
 - `src/features/shortcuts/drag/gridLayout.ts`
@@ -186,15 +186,15 @@ Files that should stay out of the first standalone repo:
 ## Suggested standalone repo structure
 
 ```text
-leaftab-grid/
+leaftab-workspace/
   README.md
   LICENSE
   package.json
   packages/
-    grid-core/
+    workspace-core/
       package.json
       src/
-    grid-react/
+    workspace-react/
       package.json
       src/
   examples/

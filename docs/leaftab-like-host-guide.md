@@ -1,6 +1,6 @@
 # Building A LeafTab-Like Host
 
-This guide explains how to use `leaftab-grid` to build a host app that feels close to the LeafTab shortcut surface.
+This guide explains how to use `leaftab-workspace` to build a host app that feels close to the LeafTab shortcut surface.
 
 The short version:
 
@@ -10,7 +10,7 @@ The short version:
 
 ## What You Get From This Repo
 
-Use `@leaftab/grid-core` for:
+Use `@leaftab/workspace-core` for:
 
 - shortcut tree operations
 - drop-intent application
@@ -18,7 +18,7 @@ Use `@leaftab/grid-core` for:
 - pointer-drag session math
 - folder-aware drag outcomes
 
-Use `@leaftab/grid-react` for:
+Use `@leaftab/workspace-react` for:
 
 - `RootShortcutGrid`
 - `FolderShortcutSurface`
@@ -26,7 +26,7 @@ Use `@leaftab/grid-react` for:
 - drag motion lifecycle
 - host-injected rendering and hit-region hooks
 
-Use `@leaftab/grid-preset-leaftab` when you want a LeafTab-like starting point for:
+Use `@leaftab/workspace-preset-leaftab` when you want a LeafTab-like starting point for:
 
 - compact metrics
 - root-grid layout resolution
@@ -137,8 +137,8 @@ Recommended default:
 
 The most reliable pattern is:
 
-1. use `@leaftab/grid-core` for state operations and drag outcomes
-2. use `@leaftab/grid-react` for the interaction shell
+1. use `@leaftab/workspace-core` for state operations and drag outcomes
+2. use `@leaftab/workspace-react` for the interaction shell
 3. keep your card and folder visuals in your own host app
 4. inject layout and target-region logic that matches your visual system
 

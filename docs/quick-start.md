@@ -26,8 +26,8 @@ This starts:
 
 Use it to learn:
 
-- how `@leaftab/grid-core` applies shortcut-tree updates
-- how `@leaftab/grid-react` renders root and folder surfaces
+- how `@leaftab/workspace-core` applies shortcut-tree updates
+- how `@leaftab/workspace-react` renders root and folder surfaces
 - the minimum host code needed to make the grid work
 
 ### Showcase
@@ -45,7 +45,7 @@ This starts:
 Use it to inspect:
 
 - the public demo host
-- `@leaftab/grid-preset-leaftab`
+- `@leaftab/workspace-preset-leaftab`
 - the current open-source interaction contract
 
 ### Close-to-LeafTab reference host
@@ -121,7 +121,7 @@ npm run build
 
 The repository currently has three public layers:
 
-### `@leaftab/grid-core`
+### `@leaftab/workspace-core`
 
 Owns:
 
@@ -130,7 +130,7 @@ Owns:
 - packed layout logic
 - drop-intent resolution
 
-### `@leaftab/grid-react`
+### `@leaftab/workspace-react`
 
 Owns:
 
@@ -139,7 +139,7 @@ Owns:
 - shared React drag lifecycle
 - rendering hooks for host apps
 
-### `@leaftab/grid-preset-leaftab`
+### `@leaftab/workspace-preset-leaftab`
 
 Owns the current LeafTab-like host preset layer:
 
@@ -155,8 +155,8 @@ Owns the current LeafTab-like host preset layer:
 
 Use:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
 
 Best for:
 
@@ -172,9 +172,9 @@ Start from:
 
 Use:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
-- `@leaftab/grid-preset-leaftab`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
+- `@leaftab/workspace-preset-leaftab`
 
 Best for:
 
@@ -192,9 +192,9 @@ Start from:
 
 Use:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
-- optional `@leaftab/grid-preset-leaftab` geometry helpers
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
+- optional `@leaftab/workspace-preset-leaftab` geometry helpers
 
 Best for:
 
@@ -212,8 +212,8 @@ Start from:
 - Behavior contract: [compact-grid-rules.md](./compact-grid-rules.md)
 - Concepts guide: [shortcut-grid-concepts.md](./shortcut-grid-concepts.md)
 - Comparison guide: [shortcut-grid-comparison.md](./shortcut-grid-comparison.md)
-- Execution plan: [leaftab-grid-execution-plan.md](./leaftab-grid-execution-plan.md)
-- Sync guide: [leaftab-grid-sync-guide.md](./leaftab-grid-sync-guide.md)
+- Execution plan: [leaftab-workspace-execution-plan.md](./leaftab-workspace-execution-plan.md)
+- Sync guide: [leaftab-workspace-sync-guide.md](./leaftab-workspace-sync-guide.md)
 - LeafTab-like host guide: [leaftab-like-host-guide.md](./leaftab-like-host-guide.md)
 - Preset alignment checklist: [leaftab-preset-alignment-checklist.md](./leaftab-preset-alignment-checklist.md)
 

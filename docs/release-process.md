@@ -1,6 +1,6 @@
 # Release Process
 
-This document describes the lightweight release discipline for `leaftab-grid` while the project is still in the `0.1.x alpha` stage.
+This document describes the lightweight release discipline for `leaftab-workspace` while the project is still in the `0.1.x alpha` stage.
 
 ## Current Versioning Policy
 
@@ -25,9 +25,9 @@ npm run quality:ordered
 
 This validates the repo in the same dependency order that the workspace is layered:
 
-1. `@leaftab/grid-core`
-2. `@leaftab/grid-react`
-3. `@leaftab/grid-preset-leaftab`
+1. `@leaftab/workspace-core`
+2. `@leaftab/workspace-react`
+3. `@leaftab/workspace-preset-leaftab`
 4. example hosts
 5. package publishability
 

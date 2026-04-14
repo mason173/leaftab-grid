@@ -12,7 +12,7 @@ import {
   resolveLeaftabFolderItemLayout,
   resolveLeaftabRootItemLayout,
 } from './layout';
-import type { Shortcut } from '@leaftab/grid-core';
+import type { Shortcut } from '@leaftab/workspace-core';
 
 const linkShortcut: Shortcut = {
   id: 'github',

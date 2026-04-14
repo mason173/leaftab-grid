@@ -9,7 +9,7 @@ import {
   type PointerPoint,
   type RootShortcutDropIntent,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 
 export type CompactTargetRegion = {
   left: number;

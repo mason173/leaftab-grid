@@ -1,4 +1,4 @@
-import type { Shortcut } from '@leaftab/grid-core';
+import type { Shortcut } from '@leaftab/workspace-core';
 import { describe, expect, it } from 'vitest';
 import {
   buildProjectedGridItemsPreservingFrozenSlotsByOrdinal,

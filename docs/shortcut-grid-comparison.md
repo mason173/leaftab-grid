@@ -1,6 +1,6 @@
 # Shortcut Grid Comparison Guide
 
-This guide explains how `leaftab-grid` differs from other common open-source approaches.
+This guide explains how `leaftab-workspace` differs from other common open-source approaches.
 
 It is not meant to dismiss those tools. It is meant to clarify what problem this repo is actually solving.
 
@@ -15,9 +15,9 @@ Examples in this category include libraries that focus on:
 
 These libraries are excellent building blocks, but they usually stop at the primitive layer.
 
-`leaftab-grid` goes further in a very specific direction.
+`leaftab-workspace` goes further in a very specific direction.
 
-What `leaftab-grid` adds on top:
+What `leaftab-workspace` adds on top:
 
 - root-grid reorder that behaves like a launcher surface
 - merge one shortcut onto another to create a folder
@@ -29,7 +29,7 @@ What `leaftab-grid` adds on top:
 In short:
 
 - a generic sortable library gives you drag primitives
-- `leaftab-grid` gives you a shortcut-surface behavior model
+- `leaftab-workspace` gives you a shortcut-surface behavior model
 
 ## Compared To Dashboard Grid Libraries
 
@@ -48,7 +48,7 @@ What dashboard grids often assume:
 - resize is part of the primary model
 - packed movement can feel acceptable even if it is more dashboard-like than icon-like
 
-What `leaftab-grid` assumes instead:
+What `leaftab-workspace` assumes instead:
 
 - shortcuts are compact icon cards
 - folders are first-class shortcut containers
@@ -96,11 +96,11 @@ If you want:
 
 - a desktop-like shortcut launcher surface with folders, merge, extraction, and stable compact-grid drag behavior
 
-that is the exact problem `leaftab-grid` is designed to solve.
+that is the exact problem `leaftab-workspace` is designed to solve.
 
 ## Practical Integration Decision
 
-Use `leaftab-grid` when your product needs most of these at the same time:
+Use `leaftab-workspace` when your product needs most of these at the same time:
 
 - compact icon tiles
 - folder-aware interactions
@@ -109,6 +109,6 @@ Use `leaftab-grid` when your product needs most of these at the same time:
 - large-folder or multi-span shortcut items
 - stable drag feel across neutral gaps
 
-If you only need plain reorder, `leaftab-grid` may be more specialized than you need.
+If you only need plain reorder, `leaftab-workspace` may be more specialized than you need.
 
 If you need the launcher-style behavior contract, it will usually save substantial host-side work compared with stitching those rules together yourself.

@@ -1,12 +1,12 @@
-# Leaftab Grid Execution Plan
+# Leaftab Workspace Execution Plan
 
-This document is the working execution plan for turning `leaftab-grid` into a stronger open-source product without letting it drift away from the real LeafTab shortcut system.
+This document is the working execution plan for turning `leaftab-workspace` into a stronger open-source product without letting it drift away from the real LeafTab shortcut system.
 
 The plan is intentionally practical. It is meant to guide day-to-day work, not just describe ideals.
 
 ## Primary Goal
 
-Build `leaftab-grid` into a high-quality open-source project with its own clear identity:
+Build `leaftab-workspace` into a high-quality open-source project with its own clear identity:
 
 - desktop-style shortcut grid
 - folder-aware interactions
@@ -35,7 +35,7 @@ Do not change shared behavior, preset rendering, showcase structure, and plugin 
 
 ### 3. Shared behavior belongs here
 
-If the behavior is reusable, it should live in `leaftab-grid`.
+If the behavior is reusable, it should live in `leaftab-workspace`.
 
 ### 4. App-only policy stays in LeafTab
 
@@ -54,9 +54,9 @@ An extracted piece should have at least one of:
 
 These items are already in place:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
-- initial `@leaftab/grid-preset-leaftab`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
+- initial `@leaftab/workspace-preset-leaftab`
 - GitHub Pages showcase consuming the preset layer
 - `examples/minimal`
 - `examples/leaftab-like`
@@ -66,9 +66,9 @@ These items are already in place:
 
 This means the project has already moved beyond a simple extraction and now has the beginning of a three-layer public shape:
 
-- `grid-core`
-- `grid-react`
-- `grid-preset-leaftab`
+- `workspace-core`
+- `workspace-react`
+- `workspace-preset-leaftab`
 
 Recent confidence work now also exists:
 
@@ -111,7 +111,7 @@ Risk level:
 
 Objective:
 
-- make `@leaftab/grid-preset-leaftab` represent the real LeafTab host layer more faithfully
+- make `@leaftab/workspace-preset-leaftab` represent the real LeafTab host layer more faithfully
 
 Tasks:
 
@@ -204,7 +204,7 @@ Tasks:
    - how this differs from a generic sortable grid
    - how this differs from a dashboard grid
 4. Add preset usage documentation.
-5. Add a sync guide for keeping LeafTab and `leaftab-grid` aligned.
+5. Add a sync guide for keeping LeafTab and `leaftab-workspace` aligned.
 6. Keep API entrypoints and public contract documentation up to date.
 
 Done when:
@@ -231,9 +231,9 @@ Tasks:
    - test
    - package publishability
 4. Improve CI so the chain is always validated in order:
-   - `grid-core`
-   - `grid-react`
-   - `grid-preset-leaftab`
+   - `workspace-core`
+   - `workspace-react`
+   - `workspace-preset-leaftab`
    - showcase
 5. Add changelog and versioning discipline.
 
@@ -311,7 +311,7 @@ Risk level:
 These are the next concrete actions to take from this point:
 
 1. Create the plugin-vs-preset alignment checklist.
-2. Compare `grid-preset-leaftab` against the real LeafTab host files.
+2. Compare `workspace-preset-leaftab` against the real LeafTab host files.
 3. Record the current mismatches.
 4. Fix the preset in small, verifiable slices:
    - compact metrics
@@ -345,7 +345,7 @@ This execution plan is succeeding if:
 
 - the open-source project becomes easier to adopt
 - the showcase becomes a stronger proof of capability
-- `grid-preset-leaftab` gets closer to the real plugin instead of drifting away
+- `workspace-preset-leaftab` gets closer to the real plugin instead of drifting away
 - future plugin integration becomes easier, not harder
 - the repo develops a clearer identity as a desktop-style shortcut grid system
 

@@ -8,7 +8,7 @@ import {
   isShortcutFolder,
   mergeShortcutsIntoNewFolder,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import {
   FolderShortcutSurface,
   RootShortcutGrid,
@@ -19,13 +19,13 @@ import {
   type RootShortcutGridRenderDragPreviewParams,
   type RootShortcutGridRenderDropPreviewParams,
   type RootShortcutGridRenderItemParams,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import {
   LEAFTAB_COMPACT_GRID_METRICS,
   computeLeaftabLargeFolderPreviewSize,
   createLeaftabFolderSurfacePreset,
   createLeaftabRootGridPreset,
-} from '@leaftab/grid-preset-leaftab';
+} from '@leaftab/workspace-preset-leaftab';
 import {
   startTransition,
   useEffect,
@@ -481,7 +481,7 @@ export function App() {
           <h1>Same grid engine, different host personality.</h1>
           <p className="studio-lede">
             This example keeps the folder-aware drag contract intact, but swaps the visual language completely.
-            It is the proof that `leaftab-grid` is not tied to one app aesthetic.
+            It is the proof that `leaftab-workspace` is not tied to one app aesthetic.
           </p>
         </div>
         <div className="studio-badges" aria-label="Workspace summary">

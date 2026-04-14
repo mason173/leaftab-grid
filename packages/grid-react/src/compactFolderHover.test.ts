@@ -2,7 +2,7 @@ import {
   buildReorderProjectionOffsets,
   type ProjectionOffset,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import { describe, expect, it } from 'vitest';
 import {
   resolveCompactReorderOnlyHoverResolution,

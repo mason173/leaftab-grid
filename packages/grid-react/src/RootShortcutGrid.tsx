@@ -23,7 +23,7 @@ import {
   type RootShortcutDropIntent,
   type Shortcut,
   type ShortcutExternalDragSessionSeed,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { GridDragItemFrame } from './GridDragItemFrame';

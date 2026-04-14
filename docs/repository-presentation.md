@@ -8,7 +8,7 @@ Desktop-style shortcut grid engine and React adapters extracted from LeafTab, wi
 
 ## Suggested website URL
 
-`https://mason173.github.io/leaftab-grid/`
+`https://mason173.github.io/leaftab-workspace/`
 
 ## Suggested topics
 
@@ -25,19 +25,19 @@ Desktop-style shortcut grid engine and React adapters extracted from LeafTab, wi
 
 ## Suggested About blurb
 
-Leaftab Grid is the open-source shortcut grid system extracted from LeafTab. It focuses on root-grid reorder, merge-to-folder behavior, folder extraction back into the root surface, and span-aware placement for larger folder tiles.
+Leaftab Workspace is the open-source shortcut grid system extracted from LeafTab. It focuses on root-grid reorder, merge-to-folder behavior, folder extraction back into the root surface, and span-aware placement for larger folder tiles.
 
 ## Suggested pinned links
 
-- GitHub Pages showcase: `https://mason173.github.io/leaftab-grid/`
-- Behavior contract: `https://github.com/mason173/leaftab-grid/blob/main/docs/compact-grid-rules.md`
+- GitHub Pages showcase: `https://mason173.github.io/leaftab-workspace/`
+- Behavior contract: `https://github.com/mason173/leaftab-workspace/blob/main/docs/compact-grid-rules.md`
 - LeafTab origin repo: `https://github.com/mason173/LeafTab`
 
 ## Suggested social preview copy
 
 Headline:
 
-`Leaftab Grid`
+`Leaftab Workspace`
 
 Subheadline:
 

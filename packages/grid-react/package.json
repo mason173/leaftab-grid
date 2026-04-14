@@ -1,7 +1,7 @@
 {
-  "name": "@leaftab/grid-react",
+  "name": "@leaftab/workspace-react",
   "version": "0.2.0-alpha.1",
-  "description": "React adapters for Leaftab Grid, including root-grid and folder-surface interactions.",
+  "description": "React adapters for Leaftab Workspace, including root-grid and folder-surface interactions.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -29,7 +29,7 @@
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
-    "@leaftab/grid-core": "^0.2.0-alpha.1"
+    "@leaftab/workspace-core": "^0.2.0-alpha.1"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.json",

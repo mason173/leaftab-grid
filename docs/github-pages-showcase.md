@@ -6,8 +6,8 @@ This repository includes a GitHub Pages-ready showcase app in `examples/showcase
 
 The showcase is a live demo site for the open-source grid packages:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
 
 It is meant to demonstrate the interaction model in a way that is easier to understand than API docs alone:
 
@@ -74,9 +74,9 @@ After that, pushes to `main` should publish the site automatically.
 
 ## Base path
 
-The Vite config for the showcase uses `/leaftab-grid/` as the production base path by default, which matches the standard GitHub Pages URL for this repository:
+The Vite config for the showcase uses `/leaftab-workspace/` as the production base path by default, which matches the standard GitHub Pages URL for this repository:
 
-`https://mason173.github.io/leaftab-grid/`
+`https://mason173.github.io/leaftab-workspace/`
 
 If you ever deploy the showcase somewhere else, you can override the base path with:
 

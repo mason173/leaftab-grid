@@ -1,4 +1,4 @@
-import { buildLayoutShiftOffsets, type ProjectionOffset } from '@leaftab/grid-core';
+import { buildLayoutShiftOffsets, type ProjectionOffset } from '@leaftab/workspace-core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type DragSettlePreview<TItem> = {

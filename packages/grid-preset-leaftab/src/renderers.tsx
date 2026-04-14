@@ -1,4 +1,4 @@
-import { getShortcutChildren, isShortcutFolder, type Shortcut } from '@leaftab/grid-core';
+import { getShortcutChildren, isShortcutFolder, type Shortcut } from '@leaftab/workspace-core';
 import type {
   FolderShortcutSurfaceRenderDragPreviewParams,
   FolderShortcutSurfaceRenderDropPreviewParams,
@@ -7,7 +7,7 @@ import type {
   RootShortcutGridRenderDragPreviewParams,
   RootShortcutGridRenderDropPreviewParams,
   RootShortcutGridRenderItemParams,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import React, { type MouseEvent as ReactMouseEvent } from 'react';
 import { LEAFTAB_COMPACT_GRID_METRICS } from './constants';
 import {

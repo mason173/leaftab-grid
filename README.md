@@ -1,8 +1,8 @@
-# Leaftab Grid
+# Leaftab Workspace
 
 A desktop-style, folder-aware shortcut grid engine for launcher and browser start-page experiences.
 
-Leaftab Grid is the open-source interaction layer extracted from [LeafTab](https://github.com/mason173/LeafTab). It is built for shortcut surfaces that need to feel more like a desktop, launcher, or new-tab workspace than a generic sortable list.
+Leaftab Workspace is the open-source interaction layer extracted from [LeafTab](https://github.com/mason173/LeafTab). It is built for shortcut surfaces that need to feel more like a desktop, launcher, or new-tab workspace than a generic sortable list.
 
 It focuses on behaviors that typical sortable grids usually do not cover well:
 
@@ -17,7 +17,7 @@ Current release stage: `0.2.x alpha`
 
 ## Why It Feels Different
 
-Many drag-and-drop libraries are intentionally generic. Many grid libraries are intentionally dashboard-oriented. Leaftab Grid is different because it is opinionated about shortcut-workspace behavior:
+Many drag-and-drop libraries are intentionally generic. Many grid libraries are intentionally dashboard-oriented. Leaftab Workspace is different because it is opinionated about shortcut-workspace behavior:
 
 - icon-body hit regions matter, not only whole-cell rectangles
 - merge and reorder must coexist cleanly in the same surface
@@ -29,16 +29,16 @@ If you want a shortcut surface that behaves like a real launcher or browser star
 
 ## Live Links
 
-- GitHub Pages showcase: [mason173.github.io/leaftab-grid](https://mason173.github.io/leaftab-grid/)
-- Repository: [github.com/mason173/leaftab-grid](https://github.com/mason173/leaftab-grid)
+- GitHub Pages showcase: [mason173.github.io/leaftab-workspace](https://mason173.github.io/leaftab-workspace/)
+- Repository: [github.com/mason173/leaftab-workspace](https://github.com/mason173/leaftab-workspace)
 - Behavior contract: [docs/compact-grid-rules.md](./docs/compact-grid-rules.md)
 - Concepts guide: [docs/shortcut-grid-concepts.md](./docs/shortcut-grid-concepts.md)
 - Comparison guide: [docs/shortcut-grid-comparison.md](./docs/shortcut-grid-comparison.md)
 - Quick start: [docs/quick-start.md](./docs/quick-start.md)
 - Release process: [docs/release-process.md](./docs/release-process.md)
-- Execution plan: [docs/leaftab-grid-execution-plan.md](./docs/leaftab-grid-execution-plan.md)
+- Execution plan: [docs/leaftab-workspace-execution-plan.md](./docs/leaftab-workspace-execution-plan.md)
 - LeafTab preset alignment checklist: [docs/leaftab-preset-alignment-checklist.md](./docs/leaftab-preset-alignment-checklist.md)
-- Sync guide: [docs/leaftab-grid-sync-guide.md](./docs/leaftab-grid-sync-guide.md)
+- Sync guide: [docs/leaftab-workspace-sync-guide.md](./docs/leaftab-workspace-sync-guide.md)
 - LeafTab-like integration guide: [docs/leaftab-like-host-guide.md](./docs/leaftab-like-host-guide.md)
 - Plugin convergence plan: [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md)
 - Pages deployment guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
@@ -46,7 +46,7 @@ If you want a shortcut surface that behaves like a real launcher or browser star
 
 ## LeafTab Origin
 
-Leaftab Grid was extracted from the production shortcut system inside LeafTab, the browser new-tab extension where these interactions were originally designed and refined.
+Leaftab Workspace was extracted from the production shortcut system inside LeafTab, the browser new-tab extension where these interactions were originally designed and refined.
 
 LeafTab links:
 
@@ -86,19 +86,19 @@ If you want a 1:1 LeafTab look and feel, you still need a host layer that matche
 
 The repository now has three clear public layers:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
-- `@leaftab/grid-preset-leaftab`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
+- `@leaftab/workspace-preset-leaftab`
 
 That shape matters because it makes the project easier to understand and easier to adopt:
 
-- `grid-core` owns behavior and tree operations
-- `grid-react` owns reusable interaction shells
-- `grid-preset-leaftab` owns the LeafTab-like host wiring and preset helpers
+- `workspace-core` owns behavior and tree operations
+- `workspace-react` owns reusable interaction shells
+- `workspace-preset-leaftab` owns the LeafTab-like host wiring and preset helpers
 
 ## Packages
 
-### `@leaftab/grid-core`
+### `@leaftab/workspace-core`
 
 Pure layout, drag, and domain logic.
 
@@ -110,7 +110,7 @@ This package owns:
 - root drop-intent resolution
 - folder-aware mutation outcomes
 
-### `@leaftab/grid-react`
+### `@leaftab/workspace-react`
 
 React adapters for the root grid, folder surface, and shared drag-motion lifecycle.
 
@@ -121,7 +121,7 @@ This package owns:
 - shared preview geometry and motion helpers
 - injected render hooks for host-specific visuals
 
-### `@leaftab/grid-preset-leaftab`
+### `@leaftab/workspace-preset-leaftab`
 
 LeafTab-like host preset for apps that want to get much closer to the real LeafTab feel without rebuilding every host-side metric and renderer from scratch.
 
@@ -308,7 +308,7 @@ To avoid the LeafTab app repo and this package repo drifting apart, use this rul
 
 Practical workflow:
 
-1. Change reusable drag, layout, or adapter behavior in `leaftab-grid`.
+1. Change reusable drag, layout, or adapter behavior in `leaftab-workspace`.
 2. Run `npm run build` here.
 3. Rebuild `LeafTab`, which consumes this repo through local `file:` dependencies during co-development.
 4. Only adjust thin host adapters or visuals inside `LeafTab` when the shared package layer is not the right place.
@@ -336,23 +336,23 @@ What should stay in LeafTab:
 - Quick start: [docs/quick-start.md](./docs/quick-start.md)
 - Release process: [docs/release-process.md](./docs/release-process.md)
 - Alpha release notes draft: [docs/release-notes-v0.2.0-alpha.1.md](./docs/release-notes-v0.2.0-alpha.1.md)
-- Execution plan: [docs/leaftab-grid-execution-plan.md](./docs/leaftab-grid-execution-plan.md)
+- Execution plan: [docs/leaftab-workspace-execution-plan.md](./docs/leaftab-workspace-execution-plan.md)
 - LeafTab preset alignment checklist: [docs/leaftab-preset-alignment-checklist.md](./docs/leaftab-preset-alignment-checklist.md)
-- Sync guide: [docs/leaftab-grid-sync-guide.md](./docs/leaftab-grid-sync-guide.md)
+- Sync guide: [docs/leaftab-workspace-sync-guide.md](./docs/leaftab-workspace-sync-guide.md)
 - LeafTab-like integration guide: [docs/leaftab-like-host-guide.md](./docs/leaftab-like-host-guide.md)
 - Plugin convergence plan: [docs/plugin-convergence-plan.md](./docs/plugin-convergence-plan.md)
 - GitHub Pages guide: [docs/github-pages-showcase.md](./docs/github-pages-showcase.md)
 - Repository presentation kit: [docs/repository-presentation.md](./docs/repository-presentation.md)
 - Extraction architecture: [docs/shortcut-grid-extraction-architecture.md](./docs/shortcut-grid-extraction-architecture.md)
-- Migration map: [docs/leaftab-grid-migration-map.md](./docs/leaftab-grid-migration-map.md)
+- Migration map: [docs/leaftab-workspace-migration-map.md](./docs/leaftab-workspace-migration-map.md)
 
 ## Status
 
 Current repository status:
 
-- `@leaftab/grid-core` is a standalone package with its own source, tests, typecheck, and build pipeline.
-- `@leaftab/grid-react` includes reusable `RootShortcutGrid` and `FolderShortcutSurface` adapters plus the shared drag-motion primitives they build on.
-- `@leaftab/grid-preset-leaftab` now provides LeafTab-like preset helpers for root-grid and folder-surface host wiring.
+- `@leaftab/workspace-core` is a standalone package with its own source, tests, typecheck, and build pipeline.
+- `@leaftab/workspace-react` includes reusable `RootShortcutGrid` and `FolderShortcutSurface` adapters plus the shared drag-motion primitives they build on.
+- `@leaftab/workspace-preset-leaftab` now provides LeafTab-like preset helpers for root-grid and folder-surface host wiring.
 - `examples/showcase` powers the GitHub Pages demo for this repo.
 - the public behavior layer is already test-covered
 - the real LeafTab app has started consuming selected shared preset wiring back from this repo

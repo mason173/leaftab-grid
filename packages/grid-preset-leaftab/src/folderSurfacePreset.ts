@@ -1,4 +1,4 @@
-import type { FolderShortcutSurfaceProps } from '@leaftab/grid-react';
+import type { FolderShortcutSurfaceProps } from '@leaftab/workspace-react';
 import { LEAFTAB_COMPACT_GRID_METRICS } from './constants';
 import { resolveLeaftabFolderItemLayout } from './layout';
 import {

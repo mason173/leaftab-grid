@@ -1,22 +1,22 @@
-# Leaftab Grid Package Blueprint
+# Leaftab Workspace Package Blueprint
 
-This document defines the first publishable package surface for the standalone `leaftab-grid` repository.
+This document defines the first publishable package surface for the standalone `leaftab-workspace` repository.
 
 ## Recommended repo layout
 
 ```text
-leaftab-grid/
+leaftab-workspace/
   LICENSE
   README.md
   package.json
   tsconfig.base.json
   packages/
-    grid-core/
+    workspace-core/
       package.json
       tsconfig.json
       src/
         index.ts
-    grid-react/
+    workspace-react/
       package.json
       tsconfig.json
       src/
@@ -36,7 +36,7 @@ Suggested responsibilities:
 - shared test config
 - release scripts
 
-## `@leaftab/grid-core`
+## `@leaftab/workspace-core`
 
 ### What it should export first
 
@@ -70,7 +70,7 @@ export * from './model/constraints';
 export * from './domain/dropIntents';
 ```
 
-### Files to move into `grid-core`
+### Files to move into `workspace-core`
 
 - `src/features/shortcuts/domain/dropIntents.ts`
 - `src/features/shortcuts/drag/compactRootDrag.ts`
@@ -87,7 +87,7 @@ export * from './domain/dropIntents';
 - `src/features/shortcuts/model/selectors.ts`
 - `src/features/shortcuts/model/types.ts`
 
-## `@leaftab/grid-react`
+## `@leaftab/workspace-react`
 
 ### What it should export first
 
@@ -105,7 +105,7 @@ export * from './components/FolderShortcutSurface';
 export * from './components/RootShortcutGrid';
 ```
 
-### Files to move into `grid-react`
+### Files to move into `workspace-react`
 
 - `src/features/shortcuts/drag/useDragMotionState.ts`
 - `src/features/shortcuts/components/DraggableShortcutItemFrame.tsx`
@@ -114,7 +114,7 @@ export * from './components/RootShortcutGrid';
 
 ## Dependencies
 
-### `grid-core`
+### `workspace-core`
 
 Keep this package as close to pure TypeScript as possible.
 
@@ -124,7 +124,7 @@ Expected runtime deps:
 
 If React app types are still shared temporarily, keep that as a migration step only.
 
-### `grid-react`
+### `workspace-react`
 
 Expected peer deps:
 
@@ -133,7 +133,7 @@ Expected peer deps:
 
 Expected direct deps:
 
-- ideally none beyond `grid-core`
+- ideally none beyond `workspace-core`
 
 If some UI rendering primitives stay package-local at first, add them intentionally instead of leaking app dependencies.
 
@@ -155,5 +155,5 @@ A good versioning policy:
 
 ## Recommended first tags
 
-- `@leaftab/grid-core@0.2.0-alpha.1`
-- `@leaftab/grid-react@0.2.0-alpha.1`
+- `@leaftab/workspace-core@0.2.0-alpha.1`
+- `@leaftab/workspace-react@0.2.0-alpha.1`

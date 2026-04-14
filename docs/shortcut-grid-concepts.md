@@ -1,6 +1,6 @@
 # Shortcut Grid Concepts
 
-This guide explains the main concepts behind `leaftab-grid` without assuming that you already know the codebase.
+This guide explains the main concepts behind `leaftab-workspace` without assuming that you already know the codebase.
 
 If you only read one conceptual document before integrating the packages, read this one and [compact-grid-rules.md](./compact-grid-rules.md).
 
@@ -8,7 +8,7 @@ If you only read one conceptual document before integrating the packages, read t
 
 The repository is intentionally split into three public layers.
 
-### `@leaftab/grid-core`
+### `@leaftab/workspace-core`
 
 This is the domain and mutation layer.
 
@@ -21,7 +21,7 @@ It owns:
 
 It does not know about React or page styling.
 
-### `@leaftab/grid-react`
+### `@leaftab/workspace-react`
 
 This is the interaction shell.
 
@@ -34,7 +34,7 @@ It owns:
 
 It does not decide your final visual design.
 
-### `@leaftab/grid-preset-leaftab`
+### `@leaftab/workspace-preset-leaftab`
 
 This is the current host preset layer.
 
@@ -198,8 +198,8 @@ The package gives you the interaction contract. Your host gives it a product wra
 
 ## Recommended Mental Model
 
-Think about `leaftab-grid` like this:
+Think about `leaftab-workspace` like this:
 
-- `grid-core` answers "what state change should happen?"
-- `grid-react` answers "how should drag interaction stay stable while that is happening?"
+- `workspace-core` answers "what state change should happen?"
+- `workspace-react` answers "how should drag interaction stay stable while that is happening?"
 - the host answers "what should this feel and look like in my product?"

@@ -1,5 +1,5 @@
 {
-  "name": "@leaftab/grid-leaftab-like-example",
+  "name": "@leaftab/workspace-leaftab-like-example",
   "private": true,
   "version": "0.2.0-alpha.1",
   "type": "module",
@@ -10,9 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@leaftab/grid-core": "0.2.0-alpha.1",
-    "@leaftab/grid-preset-leaftab": "0.2.0-alpha.1",
-    "@leaftab/grid-react": "0.2.0-alpha.1",
+    "@leaftab/workspace-core": "0.2.0-alpha.1",
+    "@leaftab/workspace-preset-leaftab": "0.2.0-alpha.1",
+    "@leaftab/workspace-react": "0.2.0-alpha.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

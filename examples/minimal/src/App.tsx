@@ -7,12 +7,12 @@ import {
   isShortcutFolder,
   mergeShortcutsIntoNewFolder,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import {
   FolderShortcutSurface,
   RootShortcutGrid,
   type RootShortcutExternalDragSession,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import {
   startTransition,
   useEffect,
@@ -162,7 +162,7 @@ export function App() {
         <div className="mini-header">
           <div>
             <p className="mini-eyebrow">Minimal Root Grid</p>
-            <h1>Leaftab Grid minimal integration</h1>
+            <h1>Leaftab Workspace minimal integration</h1>
           </div>
           <button
             type="button"

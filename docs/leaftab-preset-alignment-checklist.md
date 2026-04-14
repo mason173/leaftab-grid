@@ -1,6 +1,6 @@
 # LeafTab Preset Alignment Checklist
 
-This document tracks how closely `@leaftab/grid-preset-leaftab` matches the real LeafTab host implementation.
+This document tracks how closely `@leaftab/workspace-preset-leaftab` matches the real LeafTab host implementation.
 
 Its purpose is simple:
 

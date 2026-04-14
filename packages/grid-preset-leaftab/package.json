@@ -1,7 +1,7 @@
 {
-  "name": "@leaftab/grid-preset-leaftab",
+  "name": "@leaftab/workspace-preset-leaftab",
   "version": "0.2.0-alpha.1",
-  "description": "LeafTab-like layout and rendering preset for Leaftab Grid hosts.",
+  "description": "LeafTab-like layout and rendering preset for Leaftab Workspace hosts.",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -30,8 +30,8 @@
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
-    "@leaftab/grid-core": "^0.2.0-alpha.1",
-    "@leaftab/grid-react": "^0.2.0-alpha.1"
+    "@leaftab/workspace-core": "^0.2.0-alpha.1",
+    "@leaftab/workspace-react": "^0.2.0-alpha.1"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --tsconfig tsconfig.json",

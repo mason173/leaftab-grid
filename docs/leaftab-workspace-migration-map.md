@@ -1,21 +1,21 @@
-# Leaftab Grid Migration Map
+# Leaftab Workspace Migration Map
 
-This document maps the current Leaftab files into the future standalone `leaftab-grid` repository.
+This document maps the current Leaftab files into the future standalone `leaftab-workspace` repository.
 
 The goal is not to move everything at once. The goal is to move the right boundary in the right order.
 
 ## Migration rule
 
-Use this rule when deciding whether a file belongs in `Leaftab Grid`:
+Use this rule when deciding whether a file belongs in `Leaftab Workspace`:
 
-- if it expresses grid behavior, drag behavior, folder behavior, layout behavior, or reusable React adapters for that system, it belongs in `Leaftab Grid`
+- if it expresses grid behavior, drag behavior, folder behavior, layout behavior, or reusable React adapters for that system, it belongs in `Leaftab Workspace`
 - if it expresses Leaftab product UI, sync, scenarios, app navigation, toasts, dialogs, or branding, it stays in `Leaftab`
 
 ## Ready to move now
 
 These files are already very close to standalone package code.
 
-### Move to `@leaftab/grid-core`
+### Move to `@leaftab/workspace-core`
 
 - `src/features/shortcuts/drag/types.ts`
 - `src/features/shortcuts/drag/gridLayout.ts`
@@ -32,7 +32,7 @@ These files are already very close to standalone package code.
 - `src/features/shortcuts/model/constraints.ts`
 - `src/features/shortcuts/domain/dropIntents.ts`
 
-### Move to `@leaftab/grid-react`
+### Move to `@leaftab/workspace-react`
 
 - `src/features/shortcuts/drag/useDragMotionState.ts`
 
@@ -40,13 +40,13 @@ These are already mostly free of Leaftab app policy and are the cleanest first e
 
 ## Move next, with light dependency cleanup
 
-These files belong in `grid-react`, but still depend on Leaftab UI primitives or app-local types.
+These files belong in `workspace-react`, but still depend on Leaftab UI primitives or app-local types.
 
 ### `src/features/shortcuts/components/DraggableShortcutItemFrame.tsx`
 
 Belongs in:
 
-- `packages/grid-react/src/components/DraggableShortcutItemFrame.tsx`
+- `packages/workspace-react/src/components/DraggableShortcutItemFrame.tsx`
 
 Current cleanup needed:
 
@@ -56,14 +56,14 @@ Current cleanup needed:
 
 Recommended split:
 
-- keep the frame container in `grid-react`
+- keep the frame container in `workspace-react`
 - move Leaftab-specific visual styling helpers into thin local adapters if needed
 
 ### `src/features/shortcuts/components/FolderShortcutSurface.tsx`
 
 Belongs in:
 
-- `packages/grid-react/src/components/FolderShortcutSurface.tsx`
+- `packages/workspace-react/src/components/FolderShortcutSurface.tsx`
 
 Current cleanup needed:
 
@@ -85,11 +85,11 @@ Recommended extraction shape:
 
 ### `src/components/ShortcutGrid.tsx`
 
-This file absolutely belongs to `Leaftab Grid`, but not as-is.
+This file absolutely belongs to `Leaftab Workspace`, but not as-is.
 
 Belongs in:
 
-- `packages/grid-react/src/components/RootShortcutGrid.tsx`
+- `packages/workspace-react/src/components/RootShortcutGrid.tsx`
 
 Why it is not a direct copy yet:
 
@@ -131,7 +131,7 @@ These files are not part of the first standalone grid package.
 - scenario management
 - toast/dialog orchestration
 
-They may consume `Leaftab Grid`, but they should not define its public contract.
+They may consume `Leaftab Workspace`, but they should not define its public contract.
 
 ## Temporary dependency bridge
 
@@ -156,7 +156,7 @@ Move first:
 - pure drag helpers in `drag/*`
 - tests for those modules
 
-This gives you a real `@leaftab/grid-core`.
+This gives you a real `@leaftab/workspace-core`.
 
 ### Phase 2: shared React primitives
 
@@ -166,7 +166,7 @@ Move next:
 - `DraggableShortcutItemFrame.tsx`
 - `FolderShortcutSurface.tsx`
 
-This gives you an early `@leaftab/grid-react`.
+This gives you an early `@leaftab/workspace-react`.
 
 ### Phase 3: root grid adapter
 
@@ -182,7 +182,7 @@ If you open the standalone repo now, the best working pattern is:
 
 1. make grid behavior changes in this Leaftab repo first
 2. keep the files in this migration map as the sync boundary
-3. mirror those files into `leaftab-grid`
+3. mirror those files into `leaftab-workspace`
 4. once the standalone package matures, you can invert the source-of-truth relationship later if you want
 
 Do not hand-maintain two drifting implementations.
@@ -197,4 +197,4 @@ The first standalone demo only needs to prove five things:
 - reorder inside a folder
 - extract from a folder back to root
 
-If those five interactions are working, `Leaftab Grid` already demonstrates its core differentiator.
+If those five interactions are working, `Leaftab Workspace` already demonstrates its core differentiator.

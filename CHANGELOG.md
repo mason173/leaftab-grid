@@ -10,7 +10,7 @@ This repository is still in the `0.2.x alpha` stage, so the public API may conti
 
 ### Added
 
-- `@leaftab/grid-preset-leaftab` as the current host preset layer.
+- `@leaftab/workspace-preset-leaftab` as the current host preset layer.
 - `examples/minimal` for the smallest practical integration path.
 - `examples/leaftab-like` as the closer-to-LeafTab reference host.
 - `examples/custom-theme` as the heavily customized host example.
@@ -23,7 +23,7 @@ This repository is still in the `0.2.x alpha` stage, so the public API may conti
 
 - narrowed the preset icon strategy to a simpler, more intentional representation instead of chasing the full LeafTab icon pipeline.
 - moved the public story of the repo toward three clear layers:
-  `grid-core`, `grid-react`, and `grid-preset-leaftab`.
+  `workspace-core`, `workspace-react`, and `workspace-preset-leaftab`.
 - the real LeafTab app has started consuming selected shared preset wiring back from this repo.
 
 ### Notes

@@ -1,10 +1,10 @@
 # Release Notes Draft: `v0.2.0-alpha.1`
 
-This draft is intended for the next public GitHub pre-release of `leaftab-grid`.
+This draft is intended for the next public GitHub pre-release of `leaftab-workspace`.
 
 Suggested release title:
 
-`Leaftab Grid v0.2.0-alpha.1`
+`Leaftab Workspace v0.2.0-alpha.1`
 
 Suggested release type:
 
@@ -12,13 +12,13 @@ Suggested release type:
 
 ## Summary
 
-This alpha introduces the first serious public shape of Leaftab Grid as an open-source shortcut workspace engine.
+This alpha introduces the first serious public shape of Leaftab Workspace as an open-source shortcut workspace engine.
 
 The repository now has three clear layers:
 
-- `@leaftab/grid-core`
-- `@leaftab/grid-react`
-- `@leaftab/grid-preset-leaftab`
+- `@leaftab/workspace-core`
+- `@leaftab/workspace-react`
+- `@leaftab/workspace-preset-leaftab`
 
 It also now includes:
 
@@ -32,7 +32,7 @@ It also now includes:
 
 ### New preset package
 
-`@leaftab/grid-preset-leaftab` is now the public host preset layer for teams that want to get closer to the real LeafTab interaction feel without rebuilding every host-side helper from scratch.
+`@leaftab/workspace-preset-leaftab` is now the public host preset layer for teams that want to get closer to the real LeafTab interaction feel without rebuilding every host-side helper from scratch.
 
 Current preset coverage includes:
 

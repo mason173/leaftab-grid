@@ -9,14 +9,14 @@ LeafTab links:
 - Edge Add-ons: <https://microsoftedge.microsoft.com/addons/detail/leaftab/nfbdmggppgfmfbaddobdhdleppgffphn>
 - Firefox Add-ons: <https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/>
 
-If a future change touches drag hit-testing, merge behavior, reorder state transitions, latch rules, bridge regions, or projected drop slots, update this document in `leaftab-grid` first.
+If a future change touches drag hit-testing, merge behavior, reorder state transitions, latch rules, bridge regions, or projected drop slots, update this document in `leaftab-workspace` first.
 
 ## Scope
 
 Current product reality:
 
 - root grid behavior is `compact-only`
-- drag behavior lives in `@leaftab/grid-react`
+- drag behavior lives in `@leaftab/workspace-react`
 - host apps may supply visuals, layout inputs, and policy, but must not fork the behavior engine
 
 This document covers:
@@ -286,9 +286,9 @@ Host apps must not own:
 
 The most important behavior regressions currently live in:
 
-- `packages/grid-react/src/compactRootHover.test.ts`
-- `packages/grid-react/src/compactFolderHover.test.ts`
-- `packages/grid-react/src/rootShortcutGridHelpers.test.ts`
-- `packages/grid-core/src/drag/__tests__/resolveRootDropIntent.test.ts`
+- `packages/workspace-react/src/compactRootHover.test.ts`
+- `packages/workspace-react/src/compactFolderHover.test.ts`
+- `packages/workspace-react/src/rootShortcutGridHelpers.test.ts`
+- `packages/workspace-core/src/drag/__tests__/resolveRootDropIntent.test.ts`
 
 If a behavior change is real, these tests and this document should move together.

@@ -1,4 +1,4 @@
-import type { RootShortcutGridProps } from '@leaftab/grid-react';
+import type { RootShortcutGridProps } from '@leaftab/workspace-react';
 import { LEAFTAB_COMPACT_GRID_METRICS } from './constants';
 import {
   createLeaftabRootDropResolvers,

@@ -1,5 +1,5 @@
 {
-  "name": "@leaftab/grid-react",
+  "name": "@leaftab/workspace-react",
   "version": "0.2.0-alpha.1",
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -21,7 +21,7 @@
     "react-dom": "^18 || ^19"
   },
   "dependencies": {
-    "@leaftab/grid-core": "workspace:*"
+    "@leaftab/workspace-core": "workspace:*"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",

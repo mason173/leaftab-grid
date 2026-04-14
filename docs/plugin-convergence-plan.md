@@ -1,6 +1,6 @@
 # Plugin Convergence Plan
 
-This document describes the safest way to start converging the real LeafTab app toward the shared `leaftab-grid` preset layer.
+This document describes the safest way to start converging the real LeafTab app toward the shared `leaftab-workspace` preset layer.
 
 The goal is not to force the app to consume everything at once.
 
@@ -19,7 +19,7 @@ That means plugin convergence should start from host wiring and geometry helpers
 
 ## Best First Shared Slice
 
-The current safest first slice is the root-grid preset wiring in `@leaftab/grid-preset-leaftab`.
+The current safest first slice is the root-grid preset wiring in `@leaftab/workspace-preset-leaftab`.
 
 This slice now includes:
 
@@ -108,6 +108,6 @@ The first plugin convergence pass is successful when:
 After each plugin convergence change:
 
 1. Compare behavior against the current plugin interaction before and after the migration.
-2. Run the relevant `leaftab-grid` quality checks.
+2. Run the relevant `leaftab-workspace` quality checks.
 3. Verify the plugin root-grid reorder, merge, large-folder placement, and extract flows manually.
 4. Update the preset alignment checklist if the shared boundary changed.

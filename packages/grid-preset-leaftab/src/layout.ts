@@ -1,11 +1,11 @@
-import { isShortcutFolder, type Shortcut } from '@leaftab/grid-core';
+import { isShortcutFolder, type Shortcut } from '@leaftab/workspace-core';
 import type {
   CompactTargetRegions,
   FolderShortcutSurfaceItemLayout,
   RootShortcutGridDropTargetRects,
   RootShortcutGridItemLayout,
   RootShortcutGridResolveCompactTargetRegionsParams,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import { LEAFTAB_COMPACT_GRID_METRICS } from './constants';
 
 export type RectLike = {

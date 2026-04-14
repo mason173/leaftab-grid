@@ -1,6 +1,6 @@
-# Leaftab Grid Sync Guide
+# Leaftab Workspace Sync Guide
 
-This guide defines how `leaftab-grid` and the main LeafTab app should evolve without drifting apart.
+This guide defines how `leaftab-workspace` and the main LeafTab app should evolve without drifting apart.
 
 The short version:
 
@@ -13,7 +13,7 @@ The short version:
 There are now two related codebases:
 
 - the main LeafTab app
-- the open-source `leaftab-grid` repository
+- the open-source `leaftab-workspace` repository
 
 That is useful, but it creates one obvious risk:
 
@@ -28,17 +28,17 @@ For anything described as `LeafTab-like`, the real LeafTab app remains the refer
 That means:
 
 - the plugin defines the real behavior and feel
-- `grid-preset-leaftab` mirrors and organizes that host layer
+- `workspace-preset-leaftab` mirrors and organizes that host layer
 - the showcase demonstrates the preset
 - the showcase must not become the accidental product truth
 
 ## Source Of Truth By Layer
 
-### `@leaftab/grid-core`
+### `@leaftab/workspace-core`
 
 Source of truth:
 
-- `leaftab-grid`
+- `leaftab-workspace`
 
 This layer should own:
 
@@ -47,11 +47,11 @@ This layer should own:
 - shortcut tree operations
 - folder-aware drop outcomes
 
-### `@leaftab/grid-react`
+### `@leaftab/workspace-react`
 
 Source of truth:
 
-- `leaftab-grid`
+- `leaftab-workspace`
 
 This layer should own:
 
@@ -60,7 +60,7 @@ This layer should own:
 - preview geometry
 - generic rendering hooks
 
-### `@leaftab/grid-preset-leaftab`
+### `@leaftab/workspace-preset-leaftab`
 
 Reference source of truth:
 
@@ -68,7 +68,7 @@ Reference source of truth:
 
 Published source of truth:
 
-- `leaftab-grid`
+- `leaftab-workspace`
 
 This layer should own:
 
@@ -97,7 +97,7 @@ Use this workflow whenever work touches shared host behavior.
 
 1. Identify the layer first.
 2. Check whether the real LeafTab app already has an implementation for it.
-3. If it is reusable, extract or mirror it into `leaftab-grid`.
+3. If it is reusable, extract or mirror it into `leaftab-workspace`.
 4. Verify in the showcase.
 5. Only after it is stable, consider consuming it back in the plugin.
 
@@ -116,7 +116,7 @@ Examples:
 
 Do this:
 
-1. change `leaftab-grid`
+1. change `leaftab-workspace`
 2. test there first
 3. rebuild and verify the plugin against the new shared behavior
 
@@ -132,7 +132,7 @@ Examples:
 Do this:
 
 1. compare against the current LeafTab implementation
-2. update `grid-preset-leaftab` to match or move closer
+2. update `workspace-preset-leaftab` to match or move closer
 3. verify in the showcase
 4. record the status in the alignment checklist
 
@@ -160,7 +160,7 @@ Avoid these patterns:
 
 ## Required Reference Files
 
-Before changing `grid-preset-leaftab`, compare against these files in the LeafTab app:
+Before changing `workspace-preset-leaftab`, compare against these files in the LeafTab app:
 
 - `LeafTab/src/features/shortcuts/components/RootShortcutGrid.tsx`
 - `LeafTab/src/features/shortcuts/drag/compactRootDrag.ts`

@@ -8,18 +8,18 @@ import {
   isShortcutFolder,
   mergeShortcutsIntoNewFolder,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import {
   FolderShortcutSurface,
   RootShortcutGrid,
   type RootShortcutExternalDragSession,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import {
   LEAFTAB_COMPACT_GRID_METRICS,
   computeLeaftabLargeFolderPreviewSize,
   createLeaftabFolderSurfacePreset,
   createLeaftabRootGridPreset,
-} from '@leaftab/grid-preset-leaftab';
+} from '@leaftab/workspace-preset-leaftab';
 import {
   startTransition,
   useEffect,

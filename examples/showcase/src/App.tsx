@@ -8,18 +8,18 @@ import {
   isShortcutFolder,
   mergeShortcutsIntoNewFolder,
   type Shortcut,
-} from '@leaftab/grid-core';
+} from '@leaftab/workspace-core';
 import {
   FolderShortcutSurface,
   RootShortcutGrid,
   type RootShortcutExternalDragSession,
-} from '@leaftab/grid-react';
+} from '@leaftab/workspace-react';
 import {
   LEAFTAB_COMPACT_GRID_METRICS,
   computeLeaftabLargeFolderPreviewSize,
   createLeaftabFolderSurfacePreset,
   createLeaftabRootGridPreset,
-} from '@leaftab/grid-preset-leaftab';
+} from '@leaftab/workspace-preset-leaftab';
 import {
   startTransition,
   useEffect,
@@ -33,7 +33,7 @@ const LEAFTAB_REPO_URL = 'https://github.com/mason173/LeafTab';
 const LEAFTAB_CHROME_URL = 'https://chromewebstore.google.com/detail/leaftab/lfogogokkkpmolbfbklchcbgdiboccdf?hl=zh-CN&gl=DE';
 const LEAFTAB_EDGE_URL = 'https://microsoftedge.microsoft.com/addons/detail/leaftab/nfbdmggppgfmfbaddobdhdleppgffphn';
 const LEAFTAB_FIREFOX_URL = 'https://addons.mozilla.org/zh-CN/firefox/addon/leaftab/';
-const GRID_REPO_URL = 'https://github.com/mason173/leaftab-grid';
+const GRID_REPO_URL = 'https://github.com/mason173/leaftab-workspace';
 const RULES_DOC_URL = `${GRID_REPO_URL}/blob/main/docs/compact-grid-rules.md`;
 
 type DemoLogEntry = {
@@ -334,7 +334,7 @@ export function App() {
       <nav className="topbar" aria-label="Showcase navigation">
         <a className="topbar__brand" href="#top">
           <span className="topbar__mark">LG</span>
-          <span>Leaftab Grid</span>
+          <span>Leaftab Workspace</span>
         </a>
 
         <div className="topbar__links">
@@ -522,7 +522,7 @@ export function App() {
                 <h3>从 LeafTab 拆出来的开源网格。</h3>
                 <p>真正的来源和分发链接放在这里，避免抢主视觉，但仍然方便直接跳转。</p>
                 <div className="link-stack">
-                  <a href={GRID_REPO_URL} target="_blank" rel="noreferrer">Leaftab Grid GitHub</a>
+                  <a href={GRID_REPO_URL} target="_blank" rel="noreferrer">Leaftab Workspace GitHub</a>
                   <a href={LEAFTAB_REPO_URL} target="_blank" rel="noreferrer">LeafTab GitHub</a>
                   <a href={LEAFTAB_CHROME_URL} target="_blank" rel="noreferrer">Chrome Web Store</a>
                   <a href={LEAFTAB_EDGE_URL} target="_blank" rel="noreferrer">Edge Add-ons</a>

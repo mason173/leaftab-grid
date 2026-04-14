@@ -17,6 +17,12 @@ It is meant to demonstrate the interaction model in a way that is easier to unde
 - extract folder children back to the root grid
 - span-aware layout for larger folder tiles
 
+Important expectation:
+
+- the showcase is a public demo host for the package layer
+- it is not intended to be a 1:1 copy of the full LeafTab extension UI
+- for a host that feels closer to LeafTab, see [docs/leaftab-like-host-guide.md](./leaftab-like-host-guide.md)
+
 ## Local development
 
 Install dependencies:

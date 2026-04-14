@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  verify:
+  core:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,5 +23,93 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Verify
-        run: npm run verify
+      - name: Validate grid-core
+        run: npm run quality:core
+
+  react:
+    runs-on: ubuntu-latest
+    needs: core
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate grid-react
+        run: npm run quality:react
+
+  preset:
+    runs-on: ubuntu-latest
+    needs: react
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate grid-preset-leaftab
+        run: npm run quality:preset
+
+  examples:
+    runs-on: ubuntu-latest
+    needs: preset
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate examples
+        run: |
+          npm run build --workspace @leaftab/grid-core
+          npm run build --workspace @leaftab/grid-react
+          npm run build --workspace @leaftab/grid-preset-leaftab
+          npm run quality:examples
+
+  publishability:
+    runs-on: ubuntu-latest
+    needs: preset
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify package publishability
+        run: |
+          npm run build --workspace @leaftab/grid-core
+          npm run build --workspace @leaftab/grid-react
+          npm run build --workspace @leaftab/grid-preset-leaftab
+          npm run quality:publishability

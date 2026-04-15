@@ -35,6 +35,8 @@ const EXTRACT_HANDOFF_DELAY_MS = 520;
 const DRAG_OVERLAY_Z_INDEX = 2147483000;
 const LAYOUT_SHIFT_MIN_DISTANCE_PX = 0.5;
 const DRAG_RELEASE_SETTLE_DURATION_MS = 220;
+const DRAG_AUTO_SCROLL_EDGE_PX = 88;
+const DRAG_AUTO_SCROLL_MAX_SPEED_PX = 26;
 
 const EMPTY_FOLDER_HOVER_RESOLUTION: CompactReorderHoverResolution = {
   interactionIntent: null,
@@ -205,6 +207,46 @@ function measureFolderItems(
     itemElements,
     getId: (item) => item.shortcut.id,
   });
+}
+
+function findScrollableParent(node: HTMLElement | null): HTMLElement | null {
+  let current = node?.parentElement ?? null;
+  while (current) {
+    const style = window.getComputedStyle(current);
+    const overflowY = style.overflowY;
+    const canScroll = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay')
+      && current.scrollHeight > current.clientHeight + 1;
+    if (canScroll) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function offsetDomRectByScrollY(rect: DOMRect, scrollOffsetY: number): DOMRect {
+  if (Math.abs(scrollOffsetY) < 0.01) {
+    return rect;
+  }
+
+  return new DOMRect(
+    rect.x,
+    rect.y - scrollOffsetY,
+    rect.width,
+    rect.height,
+  );
+}
+
+function offsetMeasuredFolderItemsByScrollY(
+  snapshot: MeasuredFolderItem[] | null,
+  scrollOffsetY: number,
+): MeasuredFolderItem[] | null {
+  if (!snapshot || Math.abs(scrollOffsetY) < 0.01) {
+    return snapshot;
+  }
+
+  return snapshot.map((item) => ({
+    ...item,
+    rect: offsetDomRectByScrollY(item.rect, scrollOffsetY),
+  }));
 }
 
 function buildReorderProjectionOffsets(params: {
@@ -432,6 +474,13 @@ export function FolderShortcutSurface({
   const recognitionPointRef = useRef<PointerPoint | null>(null);
   const projectionSettleResumeRafRef = useRef<number | null>(null);
   const [dragLayoutSnapshot, setDragLayoutSnapshot] = useState<MeasuredFolderItem[] | null>(null);
+  const dragLayoutSnapshotRef = useRef<MeasuredFolderItem[] | null>(null);
+  const [dragScrollOffsetY, setDragScrollOffsetY] = useState(0);
+  const dragScrollOriginTopRef = useRef(0);
+  const autoScrollContainerRef = useRef<HTMLElement | null>(null);
+  const autoScrollBoundsRef = useRef<{ top: number; bottom: number } | null>(null);
+  const autoScrollVelocityRef = useRef(0);
+  const autoScrollRafRef = useRef<number | null>(null);
   const [suppressProjectionSettleAnimation, setSuppressProjectionSettleAnimation] = useState(false);
 
   const {
@@ -453,26 +502,41 @@ export function FolderShortcutSurface({
 
   const hoverIntent = hoverResolution.interactionIntent;
   const visualProjectionIntent = hoverResolution.visualProjectionIntent;
+  const projectionLayoutSnapshot = useMemo(
+    () => offsetMeasuredFolderItemsByScrollY(dragLayoutSnapshot, dragScrollOffsetY),
+    [dragLayoutSnapshot, dragScrollOffsetY],
+  );
+
+  const commitDragLayoutSnapshot = useCallback((nextSnapshot: MeasuredFolderItem[] | null) => {
+    dragLayoutSnapshotRef.current = nextSnapshot;
+    setDragLayoutSnapshot(nextSnapshot);
+  }, []);
+
+  const updateDragScrollOffset = useCallback(() => {
+    const container = autoScrollContainerRef.current;
+    const nextOffset = container ? container.scrollTop - dragScrollOriginTopRef.current : 0;
+    setDragScrollOffsetY((current) => (Math.abs(current - nextOffset) < 0.01 ? current : nextOffset));
+  }, []);
 
   const projectionOffsets = useMemo(
     () => buildReorderProjectionOffsets({
       shortcuts,
-      layoutSnapshot: dragLayoutSnapshot,
+      layoutSnapshot: projectionLayoutSnapshot,
       activeShortcutId: activeDragId,
       hoverIntent: visualProjectionIntent,
     }),
-    [activeDragId, dragLayoutSnapshot, shortcuts, visualProjectionIntent],
+    [activeDragId, projectionLayoutSnapshot, shortcuts, visualProjectionIntent],
   );
   const projectedDropPreview = useMemo(() => buildProjectedDropPreview({
     shortcuts,
     measuredItems,
-    layoutSnapshot: dragLayoutSnapshot,
+    layoutSnapshot: projectionLayoutSnapshot,
     activeShortcutId: activeDragId,
     hoverIntent: visualProjectionIntent,
     rootElement: rootRef.current,
   }), [
     activeDragId,
-    dragLayoutSnapshot,
+    projectionLayoutSnapshot,
     measuredItems,
     shortcuts,
     visualProjectionIntent,
@@ -500,6 +564,14 @@ export function FolderShortcutSurface({
     onDragActiveChange?.(true);
   }, [activeDragId, onDragActiveChange]);
 
+  const stopAutoScroll = useCallback(() => {
+    autoScrollVelocityRef.current = 0;
+    if (autoScrollRafRef.current !== null) {
+      window.cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
+  }, []);
+
   const clearDragState = useCallback(() => {
     if (extractHandoffTimerRef.current !== null) {
       window.clearTimeout(extractHandoffTimerRef.current);
@@ -512,11 +584,16 @@ export function FolderShortcutSurface({
     setActiveDragId(null);
     setDragPointer(null);
     setDragPreviewOffset(null);
-    setDragLayoutSnapshot(null);
+    commitDragLayoutSnapshot(null);
+    setDragScrollOffsetY(0);
+    dragScrollOriginTopRef.current = 0;
+    stopAutoScroll();
+    autoScrollContainerRef.current = null;
+    autoScrollBoundsRef.current = null;
     setHoverResolution(EMPTY_FOLDER_HOVER_RESOLUTION);
     setHoveredMask(false);
     document.body.style.userSelect = '';
-  }, []);
+  }, [commitDragLayoutSnapshot, stopAutoScroll]);
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
@@ -543,11 +620,25 @@ export function FolderShortcutSurface({
     projectionSettleResumeRafRef.current = firstFrame;
   }, []);
 
+  const refreshAutoScrollBounds = useCallback(() => {
+    const container = autoScrollContainerRef.current;
+    if (!container) {
+      autoScrollBoundsRef.current = null;
+      return;
+    }
+
+    const rect = container.getBoundingClientRect();
+    autoScrollBoundsRef.current = { top: rect.top, bottom: rect.bottom };
+  }, []);
+
   const performExtractHandoff = useCallback((pointer: PointerPoint) => {
     const session = dragSessionRef.current;
     if (!session) return;
 
-    const activeItem = (dragLayoutSnapshot ?? measureFolderItems(measuredItems, itemElementsRef.current))
+    const activeItem = (
+      offsetMeasuredFolderItemsByScrollY(dragLayoutSnapshotRef.current, dragScrollOffsetY)
+      ?? measureFolderItems(measuredItems, itemElementsRef.current)
+    )
       .find((item) => item.shortcut.id === session.activeShortcutId);
     if (!activeItem) return;
 
@@ -565,7 +656,7 @@ export function FolderShortcutSurface({
       pointer,
       anchor,
     });
-  }, [clearDragState, dragLayoutSnapshot, folderId, measuredItems, onExtractDragStart]);
+  }, [clearDragState, dragScrollOffsetY, folderId, measuredItems, onExtractDragStart]);
 
   const clearExtractHandoffTimer = useCallback(() => {
     if (extractHandoffTimerRef.current !== null) {
@@ -620,7 +711,10 @@ export function FolderShortcutSurface({
     };
   }, [columnGap, columns]);
 
-  const resolveHoverState = useCallback((pointer: PointerPoint) => {
+  const resolveHoverState = useCallback((
+    pointer: PointerPoint,
+    measuredItemsOverride?: MeasuredFolderItem[],
+  ) => {
     const session = dragSessionRef.current;
     if (!session) {
       return {
@@ -631,7 +725,7 @@ export function FolderShortcutSurface({
     }
 
     latestPointerRef.current = pointer;
-    const snapshot = dragLayoutSnapshot ?? measureFolderItems(measuredItems, itemElementsRef.current);
+    const snapshot = measuredItemsOverride ?? measureFolderItems(measuredItems, itemElementsRef.current);
     const activeItem = snapshot.find((item) => item.shortcut.id === session.activeShortcutId);
     if (!activeItem) {
       return {
@@ -704,7 +798,6 @@ export function FolderShortcutSurface({
   }, [
     clearExtractHandoffTimer,
     columnGap,
-    dragLayoutSnapshot,
     ensureExtractHandoffTimer,
     maskBoundaryRef,
     measuredItems,
@@ -712,6 +805,70 @@ export function FolderShortcutSurface({
     rowGap,
     shortcuts,
   ]);
+
+  const syncHoverState = useCallback((
+    pointer: PointerPoint,
+    measuredItemsOverride?: MeasuredFolderItem[],
+  ) => {
+    const nextHoverState = resolveHoverState(pointer, measuredItemsOverride);
+    recognitionPointRef.current = nextHoverState.recognitionPoint;
+    setHoverResolution(nextHoverState.hoverResolution);
+    setHoveredMask(nextHoverState.hoveredMask);
+  }, [resolveHoverState]);
+
+  const startAutoScrollLoop = useCallback(() => {
+    if (autoScrollRafRef.current !== null) return;
+
+    const tick = () => {
+      const container = autoScrollContainerRef.current;
+      const velocity = autoScrollVelocityRef.current;
+      if (!container || Math.abs(velocity) < 0.01) {
+        autoScrollRafRef.current = null;
+        return;
+      }
+
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const previousScrollTop = container.scrollTop;
+      const nextScrollTop = Math.max(0, Math.min(maxScrollTop, previousScrollTop + velocity));
+      container.scrollTop = nextScrollTop;
+      updateDragScrollOffset();
+
+      const pointer = latestPointerRef.current;
+      if (pointer) {
+        if (Math.abs(nextScrollTop - previousScrollTop) >= 0.25) {
+          syncHoverState(pointer, measureFolderItems(measuredItems, itemElementsRef.current));
+        } else {
+          syncHoverState(pointer);
+        }
+      }
+
+      autoScrollRafRef.current = window.requestAnimationFrame(tick);
+    };
+
+    autoScrollRafRef.current = window.requestAnimationFrame(tick);
+  }, [measuredItems, syncHoverState, updateDragScrollOffset]);
+
+  const updateAutoScrollVelocity = useCallback((clientY: number) => {
+    const container = autoScrollContainerRef.current;
+    const bounds = autoScrollBoundsRef.current;
+    if (!container || !bounds) return;
+
+    let velocity = 0;
+    if (clientY < bounds.top + DRAG_AUTO_SCROLL_EDGE_PX) {
+      const ratio = Math.min(1, (bounds.top + DRAG_AUTO_SCROLL_EDGE_PX - clientY) / DRAG_AUTO_SCROLL_EDGE_PX);
+      velocity = -(DRAG_AUTO_SCROLL_MAX_SPEED_PX * ratio * ratio);
+    } else if (clientY > bounds.bottom - DRAG_AUTO_SCROLL_EDGE_PX) {
+      const ratio = Math.min(1, (clientY - (bounds.bottom - DRAG_AUTO_SCROLL_EDGE_PX)) / DRAG_AUTO_SCROLL_EDGE_PX);
+      velocity = DRAG_AUTO_SCROLL_MAX_SPEED_PX * ratio * ratio;
+    }
+
+    autoScrollVelocityRef.current = velocity;
+    if (Math.abs(velocity) > 0.01) {
+      startAutoScrollLoop();
+    } else {
+      stopAutoScroll();
+    }
+  }, [startAutoScrollLoop, stopAutoScroll]);
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
@@ -738,15 +895,16 @@ export function FolderShortcutSurface({
         };
         dragSessionRef.current = nextSession;
         pendingDragRef.current = null;
-        setDragLayoutSnapshot(measureFolderItems(measuredItems, itemElementsRef.current));
+        autoScrollContainerRef.current = findScrollableParent(rootRef.current);
+        dragScrollOriginTopRef.current = autoScrollContainerRef.current?.scrollTop ?? 0;
+        refreshAutoScrollBounds();
+        setDragScrollOffsetY(0);
+        commitDragLayoutSnapshot(measureFolderItems(measuredItems, itemElementsRef.current));
         document.body.style.userSelect = 'none';
         setActiveDragId(nextSession.activeShortcutId);
         setDragPreviewOffset(nextSession.previewOffset);
         setDragPointer(pointer);
-        const nextHoverState = resolveHoverState(pointer);
-        recognitionPointRef.current = nextHoverState.recognitionPoint;
-        setHoverResolution(nextHoverState.hoverResolution);
-        setHoveredMask(nextHoverState.hoveredMask);
+        syncHoverState(pointer);
         event.preventDefault();
         return;
       }
@@ -756,10 +914,8 @@ export function FolderShortcutSurface({
       const pointer = { x: event.clientX, y: event.clientY };
       session.pointer = pointer;
       setDragPointer(pointer);
-      const nextHoverState = resolveHoverState(pointer);
-      recognitionPointRef.current = nextHoverState.recognitionPoint;
-      setHoverResolution(nextHoverState.hoverResolution);
-      setHoveredMask(nextHoverState.hoveredMask);
+      updateAutoScrollVelocity(pointer.y);
+      syncHoverState(pointer);
       event.preventDefault();
     };
 
@@ -780,7 +936,7 @@ export function FolderShortcutSurface({
         const activeItem = measuredItems.find((item) => item.shortcut.id === activeShortcutId) ?? null;
         const target = buildProjectedDragSettleTarget({
           shortcuts,
-          layoutSnapshot: dragLayoutSnapshot,
+          layoutSnapshot: projectionLayoutSnapshot,
           activeShortcutId,
           hoverIntent: finalHoverIntent,
         });
@@ -847,10 +1003,13 @@ export function FolderShortcutSurface({
     folderId,
     measuredItems,
     onShortcutDropIntent,
-    resolveHoverState,
+    projectionLayoutSnapshot,
+    refreshAutoScrollBounds,
     shortcuts,
     startDragSettlePreview,
-    dragLayoutSnapshot,
+    commitDragLayoutSnapshot,
+    syncHoverState,
+    updateAutoScrollVelocity,
   ]);
 
   useEffect(() => () => {

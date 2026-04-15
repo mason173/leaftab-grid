@@ -50,9 +50,15 @@ export type RootReorderSlotCandidate = {
   top: number;
   width: number;
   height: number;
+  hitLeft: number;
+  hitTop: number;
+  hitWidth: number;
+  hitHeight: number;
   centerX: number;
   centerY: number;
 };
+
+export type RootReorderSlotIntentMode = 'containing-probe' | 'closest-center';
 
 export function normalizeRootShortcutGridItemLayout(
   layout: RootShortcutGridItemLayout,
@@ -196,6 +202,8 @@ export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(param
   rowHeight: number;
   rowGap: number;
   frozenSortIds?: ReadonlySet<string> | null;
+  rectMode?: 'item' | 'preview';
+  hitRectMode?: 'item' | 'preview' | 'span-aware';
 }): RootReorderSlotCandidate[] {
   const {
     items,
@@ -206,6 +214,8 @@ export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(param
     rowHeight,
     rowGap,
     frozenSortIds = null,
+    rectMode = 'item',
+    hitRectMode = 'item',
   } = params;
   const activeItem = items.find((item) => item.sortId === activeSortId);
   if (!activeItem) return [];
@@ -223,7 +233,7 @@ export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(param
     }
     seenPhysicalPlacements.add(placementKey);
 
-    const fullRect = getProjectedGridItemRect({
+    const itemRect = getProjectedGridItemRect({
       placedItem: candidate.placedActiveItem,
       gridColumnWidth,
       columnGap,
@@ -232,17 +242,52 @@ export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(param
       width: activeItem.layout.width,
       height: activeItem.layout.height,
     });
+    const previewRect = buildProjectedRootItemPreviewRect({
+      placedItem: candidate.placedActiveItem,
+      gridColumnWidth,
+      columnGap,
+      rowHeight,
+      rowGap,
+      layout: activeItem.layout,
+    });
+    const anchorRect = buildProjectedRootItemAnchorRect({
+      placedItem: candidate.placedActiveItem,
+      gridColumnWidth,
+      columnGap,
+      rowHeight,
+      rowGap,
+    });
+    const hitRect = (() => {
+      switch (hitRectMode) {
+        case 'preview':
+          return previewRect;
+        case 'span-aware':
+          return resolveSpanAwareSlotHitRect({
+            previewRect,
+            anchorRect,
+            layout: activeItem.layout,
+          });
+        case 'item':
+        default:
+          return itemRect;
+      }
+    })();
+    const visualRect = rectMode === 'preview' ? previewRect : itemRect;
 
     return {
       targetIndex: candidate.targetIndex,
       overShortcutId: candidate.overShortcutId,
       edge: candidate.edge,
-      left: fullRect.left,
-      top: fullRect.top,
-      width: fullRect.width,
-      height: fullRect.height,
-      centerX: fullRect.left + fullRect.width / 2,
-      centerY: fullRect.top + fullRect.height / 2,
+      left: visualRect.left,
+      top: visualRect.top,
+      width: visualRect.width,
+      height: visualRect.height,
+      hitLeft: hitRect.left,
+      hitTop: hitRect.top,
+      hitWidth: hitRect.width,
+      hitHeight: hitRect.height,
+      centerX: hitRect.left + hitRect.width / 2,
+      centerY: hitRect.top + hitRect.height / 2,
     };
   };
 
@@ -314,6 +359,53 @@ export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(param
   }).filter((candidate): candidate is RootReorderSlotCandidate => Boolean(candidate));
 }
 
+function pointInRootReorderSlot(
+  point: { x: number; y: number },
+  slot: RootReorderSlotCandidate,
+): boolean {
+  return (
+    point.x >= slot.hitLeft
+    && point.x <= slot.hitLeft + slot.hitWidth
+    && point.y >= slot.hitTop
+    && point.y <= slot.hitTop + slot.hitHeight
+  );
+}
+
+function distanceToRootReorderSlotCenter(
+  point: { x: number; y: number },
+  slot: RootReorderSlotCandidate,
+): number {
+  return Math.hypot(point.x - slot.centerX, point.y - slot.centerY);
+}
+
+export function pickContainingRootReorderSlotCandidate(params: {
+  point: { x: number; y: number };
+  candidates: RootReorderSlotCandidate[];
+}): RootReorderSlotCandidate | null {
+  const { point, candidates } = params;
+  const containingSlots = candidates
+    .filter((candidate) => pointInRootReorderSlot(point, candidate))
+    .sort((left, right) => (
+      distanceToRootReorderSlotCenter(point, left) - distanceToRootReorderSlotCenter(point, right)
+    ));
+
+  return containingSlots[0] ?? null;
+}
+
+function buildRootReorderIntentFromSlotCandidate(params: {
+  activeShortcutId: string;
+  candidate: Pick<RootReorderSlotCandidate, 'targetIndex' | 'overShortcutId' | 'edge'>;
+}): RootShortcutDropIntent {
+  const { activeShortcutId, candidate } = params;
+  return {
+    type: 'reorder-root',
+    activeShortcutId,
+    overShortcutId: candidate.overShortcutId,
+    targetIndex: candidate.targetIndex,
+    edge: candidate.edge,
+  };
+}
+
 function isSameRootReorderSlotCandidate(
   candidate: RootReorderSlotCandidate,
   intent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }>,
@@ -345,7 +437,7 @@ export function pickClosestRootReorderSlotCandidate(params: {
   const ranked = candidates
     .map((candidate) => ({
       candidate,
-      distance: Math.hypot(point.x - candidate.centerX, point.y - candidate.centerY),
+      distance: distanceToRootReorderSlotCenter(point, candidate),
     }))
     .sort((left, right) => left.distance - right.distance);
 
@@ -362,6 +454,35 @@ export function pickClosestRootReorderSlotCandidate(params: {
   }
 
   return best.candidate;
+}
+
+export function resolveRootReorderSlotIntent(params: {
+  activeShortcutId: string;
+  point: { x: number; y: number };
+  candidates: RootReorderSlotCandidate[];
+  mode: RootReorderSlotIntentMode;
+  previousIntent?: RootShortcutDropIntent | null;
+}): RootShortcutDropIntent | null {
+  const { activeShortcutId, point, candidates, mode, previousIntent = null } = params;
+  const candidate = mode === 'closest-center'
+    ? pickClosestRootReorderSlotCandidate({
+        point,
+        candidates,
+        previousIntent,
+      })
+    : pickContainingRootReorderSlotCandidate({
+        point,
+        candidates,
+      });
+
+  if (!candidate) {
+    return null;
+  }
+
+  return buildRootReorderIntentFromSlotCandidate({
+    activeShortcutId,
+    candidate,
+  });
 }
 
 export function buildProjectedRootItemPreviewRect(params: {

@@ -28,9 +28,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal, flushSync } from 'react-dom';
 import { GridDragItemFrame } from './GridDragItemFrame';
 import {
-  resolveCompactReorderOnlyHoverResolution,
   resolveCompactRootHoverResolution,
-  type CompactReorderHoverIntent,
   type CompactRootHoverResolution,
   type CompactTargetRegion,
   type CompactTargetRegions,
@@ -39,13 +37,10 @@ import {
   buildDraggedRootItemAnchorRect,
   buildRootReorderSlotCandidates,
   buildProjectedRootItemPreviewRect,
-  buildProjectedRootItemAnchorRect,
   buildProjectedGridItemsForRootReorder,
-  buildProjectedGridItemsPreservingFrozenSlotsByOrdinal,
   buildRootShortcutGridItems,
-  pickClosestRootReorderSlotCandidate,
   resolveFinalHoverIntent,
-  resolveSpanAwareSlotHitRect,
+  resolveRootReorderSlotIntent,
   resolveSpanAwareSlotProbePoint,
   shouldSkipLayoutShiftOnAnimationReenable,
   type NormalizedRootShortcutGridItemLayout,
@@ -80,26 +75,17 @@ type DragSessionState = ActivePointerDragState<string> & {
 
 type MeasuredGridItem = MeasuredDragItem<RootShortcutGridItem>;
 
-type ReorderSlotCandidate = {
-  targetIndex: number;
-  overShortcutId: string;
-  edge: 'before' | 'after';
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  hitLeft: number;
-  hitTop: number;
-  hitWidth: number;
-  hitHeight: number;
-};
-
 type OverItemCandidate = {
   overItem: MeasuredGridItem;
   overRect: DOMRect;
 };
 
 type HoverResolution = CompactRootHoverResolution;
+
+type RootDragResolutionMode =
+  | 'normal'
+  | 'large-folder-reorder-only'
+  | 'extracted-reorder-only';
 
 type ProjectedDropPreview = {
   left: number;
@@ -114,6 +100,46 @@ const EMPTY_HOVER_RESOLUTION: HoverResolution = {
   interactionIntent: null,
   visualProjectionIntent: null,
 };
+
+function extractPreviousRootReorderIntents(resolution: HoverResolution): {
+  interactionIntent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }> | null;
+  visualProjectionIntent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }> | null;
+} {
+  return {
+    interactionIntent: resolution.interactionIntent?.type === 'reorder-root'
+      ? resolution.interactionIntent
+      : null,
+    visualProjectionIntent: resolution.visualProjectionIntent?.type === 'reorder-root'
+      ? resolution.visualProjectionIntent
+      : null,
+  };
+}
+
+function buildReorderOnlyHoverResolution(params: {
+  nextIntent: RootShortcutDropIntent | null;
+  previousInteractionIntent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }> | null;
+  previousVisualProjectionIntent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }> | null;
+}): HoverResolution {
+  const { nextIntent, previousInteractionIntent, previousVisualProjectionIntent } = params;
+  return {
+    interactionIntent: nextIntent ?? previousInteractionIntent,
+    visualProjectionIntent: nextIntent ?? previousVisualProjectionIntent ?? previousInteractionIntent,
+  };
+}
+
+function resolveRootDragResolutionMode(params: {
+  sourceRootShortcutId: string | null;
+  activeShortcut: Shortcut;
+}): RootDragResolutionMode {
+  const { sourceRootShortcutId, activeShortcut } = params;
+  if (sourceRootShortcutId) {
+    return 'extracted-reorder-only';
+  }
+  if (isShortcutFolder(activeShortcut) && activeShortcut.folderDisplayMode === 'large') {
+    return 'large-folder-reorder-only';
+  }
+  return 'normal';
+}
 
 export type RootShortcutExternalDragSession = ShortcutExternalDragSessionSeed & {
   token: number;
@@ -161,6 +187,11 @@ export type RootShortcutGridDropTargetRects = {
 
 export type RootShortcutGridResolveCompactTargetRegionsParams =
   RootShortcutGridResolveDropTargetRectsParams;
+
+type CompactRegionPlacement = Pick<
+  RootShortcutGridResolveCompactTargetRegionsParams,
+  'columnStart' | 'rowStart' | 'columnSpan' | 'rowSpan'
+>;
 
 function buildVisualRect(params: {
   pointer: PointerPoint;
@@ -244,45 +275,24 @@ function deriveHoverStateFromIntent(intent: RootShortcutDropIntent | null): Root
   }
 }
 
-function pointInSlot(point: PointerPoint, slot: ReorderSlotCandidate): boolean {
-  return (
-    point.x >= slot.hitLeft
-    && point.x <= slot.hitLeft + slot.hitWidth
-    && point.y >= slot.hitTop
-    && point.y <= slot.hitTop + slot.hitHeight
-  );
-}
-
-function distanceToSlotCenter(point: PointerPoint, slot: ReorderSlotCandidate): number {
-  return Math.hypot(
-    point.x - (slot.hitLeft + slot.hitWidth / 2),
-    point.y - (slot.hitTop + slot.hitHeight / 2),
-  );
-}
-
-function pickClosestReorderSlot(params: {
-  point: PointerPoint;
-  candidates: ReorderSlotCandidate[];
-}): ReorderSlotCandidate | null {
-  const { point, candidates } = params;
-  const containingSlots = candidates
-    .filter((candidate) => pointInSlot(point, candidate))
-    .sort((left, right) => distanceToSlotCenter(point, left) - distanceToSlotCenter(point, right));
-
-  return containingSlots[0] ?? null;
-}
-
-function buildReorderIntentFromSlotCandidate(params: {
-  activeShortcutId: string;
-  candidate: Pick<ReorderSlotCandidate, 'targetIndex' | 'overShortcutId' | 'edge'>;
-}): RootShortcutDropIntent {
-  const { activeShortcutId, candidate } = params;
-  return {
-    type: 'reorder-root',
-    activeShortcutId,
-    overShortcutId: candidate.overShortcutId,
-    targetIndex: candidate.targetIndex,
-    edge: candidate.edge,
+function buildResolveMeasuredItemCompactRegions(params: {
+  resolveCompactTargetRegions: NonNullable<RootShortcutGridProps['resolveCompactTargetRegions']>;
+  placementsBySortId: Map<string, CompactRegionPlacement>;
+}): (item: MeasuredGridItem) => CompactTargetRegions {
+  const { resolveCompactTargetRegions, placementsBySortId } = params;
+  return (item) => {
+    const placement = placementsBySortId.get(item.sortId);
+    return resolveCompactTargetRegions({
+      shortcut: item.shortcut,
+      shortcutIndex: item.shortcutIndex,
+      sortId: item.sortId,
+      rect: item.rect,
+      layout: item.layout,
+      columnStart: placement?.columnStart ?? 1,
+      rowStart: placement?.rowStart ?? 1,
+      columnSpan: placement?.columnSpan ?? item.layout.columnSpan,
+      rowSpan: placement?.rowSpan ?? item.layout.rowSpan,
+    });
   };
 }
 
@@ -762,128 +772,20 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     return frozenIds.size > 0 ? frozenIds : null;
   }, [activeDragItem, items, usesSpanAwareReorder]);
 
-  const reorderSlotCandidates = useMemo(() => {
+  const reorderSlotCandidates = useMemo<RootReorderSlotCandidate[]>(() => {
     if (!usesSpanAwareReorder || !activeDragId || !gridColumnWidth) return [];
-
-    const activeItem = items.find((item) => item.sortId === activeDragId);
-    if (!activeItem) return [];
-    const seenPhysicalPlacements = new Set<string>();
-
-    const registerCandidate = (params: {
-      targetIndex: number;
-      overShortcutId: string;
-      edge: 'before' | 'after';
-      placedActiveItem: { columnStart: number; rowStart: number; columnSpan: number };
-    }): ReorderSlotCandidate | null => {
-      const { targetIndex, overShortcutId, edge, placedActiveItem } = params;
-      const placementKey = `${placedActiveItem.columnStart}:${placedActiveItem.rowStart}`;
-      if (seenPhysicalPlacements.has(placementKey)) {
-        return null;
-      }
-      seenPhysicalPlacements.add(placementKey);
-
-      const projectedRect = buildProjectedRootItemPreviewRect({
-        placedItem: placedActiveItem,
-        gridColumnWidth,
-        columnGap,
-        rowHeight,
-        rowGap,
-        layout: activeItem.layout,
-      });
-      const anchorRect = buildProjectedRootItemAnchorRect({
-        placedItem: placedActiveItem,
-        gridColumnWidth,
-        columnGap,
-        rowHeight,
-        rowGap,
-      });
-      const hitRect = resolveSpanAwareSlotHitRect({
-        previewRect: projectedRect,
-        anchorRect,
-        layout: activeItem.layout,
-      });
-
-      return {
-        targetIndex,
-        overShortcutId,
-        edge,
-        left: projectedRect.left,
-        top: projectedRect.top,
-        width: projectedRect.width,
-        height: projectedRect.height,
-        hitLeft: hitRect.left,
-        hitTop: hitRect.top,
-        hitWidth: hitRect.width,
-        hitHeight: hitRect.height,
-      };
-    };
-
-    if (frozenSpanItemSortIds && frozenSpanItemSortIds.size > 0) {
-      const remainingMovableItems = items.filter(
-        (item) => !frozenSpanItemSortIds.has(item.sortId) && item.sortId !== activeDragId,
-      );
-      if (remainingMovableItems.length === 0) return [];
-
-      return Array.from({ length: remainingMovableItems.length + 1 }, (_, targetMovableOrdinal) => {
-        const projection = buildProjectedGridItemsPreservingFrozenSlotsByOrdinal({
-          items,
-          activeSortId: activeDragId,
-          targetMovableOrdinal,
-          frozenSortIds: frozenSpanItemSortIds,
-        });
-        if (!projection) return null;
-
-        const projectedLayout = packGridItems({
-          items: projection.projectedItems,
-          gridColumns,
-          getSpan: (item) => ({
-            columnSpan: item.layout.columnSpan,
-            rowSpan: item.layout.rowSpan,
-          }),
-        });
-        const placedActiveItem = projectedLayout.placedItems.find((item) => item.sortId === activeDragId);
-        const overItem = targetMovableOrdinal < remainingMovableItems.length
-          ? remainingMovableItems[targetMovableOrdinal]
-          : remainingMovableItems[remainingMovableItems.length - 1];
-        if (!placedActiveItem || !overItem) return null;
-
-        return registerCandidate({
-          targetIndex: projection.activeFullIndex,
-          overShortcutId: overItem.shortcut.id,
-          edge: targetMovableOrdinal < remainingMovableItems.length ? 'before' as const : 'after' as const,
-          placedActiveItem,
-        });
-      }).filter((candidate): candidate is ReorderSlotCandidate => Boolean(candidate));
-    }
-
-    const remainingItems = items.filter((item) => item.sortId !== activeDragId);
-    if (remainingItems.length === 0) return [];
-
-    return Array.from({ length: remainingItems.length + 1 }, (_, targetIndex) => {
-      const projectedItems = [...remainingItems];
-      projectedItems.splice(targetIndex, 0, activeItem);
-
-      const projectedLayout = packGridItems({
-        items: projectedItems,
-        gridColumns,
-        getSpan: (item) => ({
-          columnSpan: item.layout.columnSpan,
-          rowSpan: item.layout.rowSpan,
-        }),
-      });
-      const placedActiveItem = projectedLayout.placedItems.find((item) => item.sortId === activeDragId);
-      const overItem = targetIndex < remainingItems.length
-        ? remainingItems[targetIndex]
-        : remainingItems[remainingItems.length - 1];
-      if (!placedActiveItem || !overItem) return null;
-
-      return registerCandidate({
-        targetIndex,
-        overShortcutId: overItem.shortcut.id,
-        edge: targetIndex < remainingItems.length ? 'before' as const : 'after' as const,
-        placedActiveItem,
-      });
-    }).filter((candidate): candidate is ReorderSlotCandidate => Boolean(candidate));
+    return buildRootReorderSlotCandidates({
+      items,
+      activeSortId: activeDragId,
+      gridColumns,
+      gridColumnWidth,
+      columnGap,
+      rowHeight,
+      rowGap,
+      frozenSortIds: frozenSpanItemSortIds,
+      rectMode: 'preview',
+      hitRectMode: 'span-aware',
+    });
   }, [
     activeDragId,
     frozenSpanItemSortIds,
@@ -907,6 +809,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       rowHeight,
       rowGap,
       frozenSortIds: frozenSpanItemSortIds,
+      rectMode: 'item',
+      hitRectMode: 'item',
     });
   }, [
     activeDragId,
@@ -1147,6 +1051,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
                 rowHeight,
                 rowGap,
                 frozenSortIds: frozenSpanItemSortIds,
+                rectMode: 'item',
+                hitRectMode: 'item',
               })
         )
       : [];
@@ -1236,172 +1142,73 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
             }),
             layout: activeItem.layout,
           });
-          const candidate = pickClosestReorderSlot({
+          return resolveRootReorderSlotIntent({
+            activeShortcutId: activeItem.shortcut.id,
             point: slotProbePoint,
             candidates: reorderSlotCandidates,
-          });
-          if (!candidate) return null;
-          return buildReorderIntentFromSlotCandidate({
-            activeShortcutId: activeItem.shortcut.id,
-            candidate,
+            mode: 'containing-probe',
           });
         })()
       : null;
-    const isLargeFolderSelfDrag = (
-      !session.sourceRootShortcutId
-      && isShortcutFolder(activeItem.shortcut)
-      && activeItem.shortcut.folderDisplayMode === 'large'
-    );
-    const previousReorderIntent = currentHoverResolution.interactionIntent?.type === 'reorder-root'
-      ? currentHoverResolution.interactionIntent
-      : null;
-    const previousVisualReorderIntent = currentHoverResolution.visualProjectionIntent?.type === 'reorder-root'
-      ? currentHoverResolution.visualProjectionIntent
-      : null;
+    const resolutionMode = resolveRootDragResolutionMode({
+      sourceRootShortcutId: extractedSourceRootShortcutId,
+      activeShortcut: activeItem.shortcut,
+    });
+    const {
+      interactionIntent: previousReorderIntent,
+      visualProjectionIntent: previousVisualReorderIntent,
+    } = extractPreviousRootReorderIntents(currentHoverResolution);
     const extractedSlotIntent = extractedSourceRootShortcutId
       ? (() => {
-          const candidate = pickClosestRootReorderSlotCandidate({
+          return resolveRootReorderSlotIntent({
+            activeShortcutId: activeItem.shortcut.id,
             point: {
               x: activeItemRect.left - rootRect.left + activeItemRect.width / 2,
               y: activeItemRect.top - rootRect.top + activeItemRect.height / 2,
             },
             candidates: activeExtractedSlotCandidates,
             previousIntent: previousReorderIntent ?? previousVisualReorderIntent,
-          });
-          if (!candidate) return null;
-
-          return buildReorderIntentFromSlotCandidate({
-            activeShortcutId: activeItem.shortcut.id,
-            candidate,
+            mode: 'closest-center',
           });
         })()
       : null;
 
-    if (isLargeFolderSelfDrag) {
-      return {
-        interactionIntent: slotIntent ?? previousReorderIntent,
-        visualProjectionIntent: slotIntent ?? previousVisualReorderIntent ?? previousReorderIntent,
-      };
+    if (resolutionMode === 'large-folder-reorder-only') {
+      return buildReorderOnlyHoverResolution({
+        nextIntent: slotIntent,
+        previousInteractionIntent: previousReorderIntent,
+        previousVisualProjectionIntent: previousVisualReorderIntent,
+      });
     }
 
-    if (extractedSourceRootShortcutId) {
-      return {
-        interactionIntent: extractedSlotIntent ?? previousReorderIntent,
-        visualProjectionIntent: extractedSlotIntent ?? previousVisualReorderIntent ?? previousReorderIntent,
-      };
+    if (resolutionMode === 'extracted-reorder-only') {
+      return buildReorderOnlyHoverResolution({
+        nextIntent: extractedSlotIntent,
+        previousInteractionIntent: previousReorderIntent,
+        previousVisualProjectionIntent: previousVisualReorderIntent,
+      });
     }
 
     if (resolveCompactTargetRegions) {
-        const resolveMeasuredItemCompactRegions = (item: MeasuredGridItem): CompactTargetRegions => {
-          const placedItem = placedGridItemsBySortId.get(item.sortId);
-          return resolveCompactTargetRegions({
-            shortcut: item.shortcut,
-          shortcutIndex: item.shortcutIndex,
-          sortId: item.sortId,
-          rect: item.rect,
-          layout: item.layout,
-          columnStart: placedItem?.columnStart ?? 1,
-          rowStart: placedItem?.rowStart ?? 1,
-          columnSpan: placedItem?.columnSpan ?? item.layout.columnSpan,
-            rowSpan: placedItem?.rowSpan ?? item.layout.rowSpan,
-          });
-        };
-
-        const resolveSpanAwareSourceRegion = (
-          item: MeasuredGridItem | null,
-        ): CompactTargetRegion | null => {
-          if (!item) return null;
-
-          const targetIconRegion = resolveMeasuredItemCompactRegions(item).targetIconRegion;
-          return targetIconRegion;
-        };
-
-        const activeSourceRegionOverride = session.sourceRootShortcutId
-          ? (() => {
-              const sourceMeasuredItem = measuredItems.find(
-                (item) => item.shortcut.id === session.sourceRootShortcutId,
-              ) ?? null;
-              return resolveSpanAwareSourceRegion(sourceMeasuredItem);
-            })()
-          : null;
-
-        const shouldUseReorderOnlyCompactResolution = Boolean(
-          session.sourceRootShortcutId,
-        );
-
-        const compactResolution = shouldUseReorderOnlyCompactResolution
-          ? (() => {
-              const previousInteractionIntent = currentHoverResolution.interactionIntent?.type === 'reorder-root'
-                ? {
-                    overShortcutId: currentHoverResolution.interactionIntent.overShortcutId,
-                    targetIndex: currentHoverResolution.interactionIntent.targetIndex,
-                    edge: currentHoverResolution.interactionIntent.edge,
-                  }
-                : null;
-              const previousVisualProjectionIntent = currentHoverResolution.visualProjectionIntent?.type === 'reorder-root'
-                ? {
-                    overShortcutId: currentHoverResolution.visualProjectionIntent.overShortcutId,
-                    targetIndex: currentHoverResolution.visualProjectionIntent.targetIndex,
-                    edge: currentHoverResolution.visualProjectionIntent.edge,
-                  }
-                : null;
-
-              const reorderOnlyResolution = resolveCompactReorderOnlyHoverResolution({
-	        activeSortId: nextActiveDragId,
-	            recognitionPoint,
-	            previousRecognitionPoint: recognitionPointRef.current,
-	            activeVisualRect,
-                activeSourceRegionOverride,
-                sourceTargetShortcutId: session.sourceRootShortcutId ?? null,
-                measuredItems,
-                items,
-                previousInteractionIntent,
-                previousVisualProjectionIntent,
-                interactionProjectionOffsets: currentInteractionProjectionOffsets,
-                visualProjectionOffsets: currentVisualProjectionOffsets,
-                resolveRegions: resolveMeasuredItemCompactRegions,
-                columnGap,
-                rowGap,
-              });
-
-              const toRootIntent = (intent: CompactReorderHoverIntent | null) => (
-                intent
-                  ? {
-                      type: 'reorder-root' as const,
-                      activeShortcutId: activeItem.shortcut.id,
-                      overShortcutId: intent.overShortcutId,
-                      targetIndex: intent.targetIndex,
-                      edge: intent.edge,
-                    }
-                  : null
-              );
-
-              const rootInteractionIntent = toRootIntent(reorderOnlyResolution.interactionIntent);
-              const rootVisualProjectionIntent = toRootIntent(reorderOnlyResolution.visualProjectionIntent);
-              return {
-                interactionIntent: rootInteractionIntent ?? slotIntent,
-                visualProjectionIntent: rootVisualProjectionIntent ?? slotIntent,
-              };
-            })()
-          : resolveCompactRootHoverResolution({
-	            activeSortId: nextActiveDragId,
-	            recognitionPoint,
-	            previousRecognitionPoint: recognitionPointRef.current,
-	            activeVisualRect,
-	            activeSourceRegionOverride,
-	            measuredItems,
-	            items,
-            previousInteractionIntent: currentHoverResolution.interactionIntent,
-            previousVisualProjectionIntent: currentHoverResolution.visualProjectionIntent,
-            interactionProjectionOffsets: currentInteractionProjectionOffsets,
-            visualProjectionOffsets: currentVisualProjectionOffsets,
-            resolveRegions: resolveMeasuredItemCompactRegions,
-            slotIntent,
-	            columnGap,
-	            rowGap,
-	          });
-
-	      return compactResolution;
+      return resolveCompactRootHoverResolution({
+        activeSortId: nextActiveDragId,
+        recognitionPoint,
+        previousRecognitionPoint: recognitionPointRef.current,
+        activeVisualRect,
+        measuredItems,
+        items,
+        previousInteractionIntent: currentHoverResolution.interactionIntent,
+        previousVisualProjectionIntent: currentHoverResolution.visualProjectionIntent,
+        interactionProjectionOffsets: currentInteractionProjectionOffsets,
+        visualProjectionOffsets: currentVisualProjectionOffsets,
+        resolveRegions: buildResolveMeasuredItemCompactRegions({
+          resolveCompactTargetRegions,
+          placementsBySortId: placedGridItemsBySortId,
+        }),
+        slotIntent,
+        columnGap,
+        rowGap,
+      });
     }
 
     const overCandidate = pickOverItemCandidate({

@@ -1515,6 +1515,20 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     rowGap,
   } = params;
 
+  const activeMeasuredItem = measuredItems.find((item) => item.sortId === activeSortId) ?? null;
+  const resolveDisplayedRegions = (item: CompactMeasuredItem<TItem>): CompactTargetRegions => {
+    const regions = resolveRegions(item);
+    if (!preferSlotIntentForReorder || item.sortId === activeSortId) {
+      return regions;
+    }
+
+    return offsetTargetRegions(
+      regions,
+      visualProjectionOffsets.get(item.sortId)
+      ?? interactionProjectionOffsets.get(item.sortId),
+    );
+  };
+
   const stickyVisualReorderIntent = resolveStickyVisualReorderIntent({
     activeSortId,
     previousVisualProjectionIntent: extractCompactReorderIntent(previousVisualProjectionIntent),
@@ -1523,7 +1537,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     recognitionPoint,
     activeVisualRect,
     activeSourceRegionOverride,
-    resolveRegions,
+    resolveRegions: resolveDisplayedRegions,
     columnGap,
     rowGap,
   });
@@ -1535,12 +1549,10 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     previousVisualProjectionIntent,
     visualProjectionOffsets,
     activeSourceRegionOverride,
-    resolveRegions,
+    resolveRegions: resolveDisplayedRegions,
     columnGap,
     rowGap,
   });
-
-  const activeMeasuredItem = measuredItems.find((item) => item.sortId === activeSortId) ?? null;
 
   const toResolution = (interactionIntent: RootShortcutDropIntent | null): CompactRootHoverResolution => ({
     interactionIntent,
@@ -1570,7 +1582,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
       recognitionPoint,
       activeVisualRect,
       activeSourceRegionOverride,
-      resolveRegions,
+      resolveRegions: resolveDisplayedRegions,
       columnGap,
       rowGap,
     })) {
@@ -1588,17 +1600,17 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     interactionProjectionOffsets,
     visualProjectionOffsets,
     activeSourceRegionOverride,
-    resolveRegions: resolveRegions as (
+    resolveRegions: resolveDisplayedRegions as (
       item: CompactMeasuredItem<CompactHoverItem>,
     ) => CompactTargetRegions,
   });
 
   if (!preferSlotIntentForReorder && previousInteractionIntent?.type === 'reorder-root') {
     const previousTarget = findMeasuredItemByShortcutId(measuredItems, previousInteractionIntent.overShortcutId);
-    const previousTargetRegions = previousTarget ? resolveRegions(previousTarget) : null;
+    const previousTargetRegions = previousTarget ? resolveDisplayedRegions(previousTarget) : null;
     const activeSourceIconRegion = resolveActiveSourceIconRegion({
       activeMeasuredItem,
-      resolveRegions,
+      resolveRegions: resolveDisplayedRegions,
       activeSourceRegionOverride,
     });
     if (
@@ -1623,7 +1635,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     activeSortId,
     measuredItems,
     pointer: recognitionPoint,
-    resolveRegions,
+    resolveRegions: resolveDisplayedRegions,
   });
   if (!activeMeasuredItem || !pointerOverCandidate) {
     const mergeExitIntent = activeMeasuredItem
@@ -1634,7 +1646,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
           measuredItems,
           previousInteractionIntent,
           activeSourceRegionOverride,
-          resolveRegions,
+          resolveRegions: resolveDisplayedRegions,
         })
       : null;
     const resolution = toResolution(mergeExitIntent ?? slotIntent ?? previousStickyReorderIntent);
@@ -1646,7 +1658,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
 
   const activeSourceIconRegion = resolveActiveSourceIconRegion({
     activeMeasuredItem,
-    resolveRegions,
+    resolveRegions: resolveDisplayedRegions,
     activeSourceRegionOverride,
   });
   if (!activeSourceIconRegion) {
@@ -1684,12 +1696,16 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
       measuredItems,
       recognitionPoint,
       activeSourceRegionOverride,
-      resolveRegions,
+      resolveRegions: resolveDisplayedRegions,
       interactionProjectionOffsets,
       visualProjectionOffsets,
     });
+    const shouldPreferSparseSlotIntent = (
+      preferSlotIntentForReorder
+      && !pointerOverCandidate
+    );
     const resolution = toResolution(
-      (preferSlotIntentForReorder ? slotIntent : null)
+      (shouldPreferSparseSlotIntent ? slotIntent : null)
       ?? (
       (shouldHoldPreviousReorder && previousInteractionIntent?.type === 'reorder-root'
         ? previousInteractionIntent
@@ -1697,7 +1713,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
       ),
     );
     if (
-      preferSlotIntentForReorder
+      shouldPreferSparseSlotIntent
       && slotIntent?.type === 'reorder-root'
       && resolution.interactionIntent?.type !== 'move-root-shortcut-into-folder'
     ) {

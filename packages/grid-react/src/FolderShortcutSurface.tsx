@@ -259,18 +259,18 @@ function buildProjectedDropPreview(params: {
   const activeItem = measuredItems.find((item) => item.shortcut.id === activeShortcutId);
   if (!activeItem) return null;
 
-  const snapshotById = new Map(layoutSnapshot.map((item) => [item.shortcut.id, item.rect]));
-  const activeSnapshot = snapshotById.get(activeShortcutId);
-  if (!activeSnapshot) return null;
-
-  const targetRect = hoverIntent
-    ? snapshotById.get(hoverIntent.overShortcutId) ?? activeSnapshot
-    : activeSnapshot;
+  const target = buildProjectedDragSettleTarget({
+    shortcuts,
+    layoutSnapshot,
+    activeShortcutId,
+    hoverIntent,
+  });
+  if (!target) return null;
   const rootRect = rootElement.getBoundingClientRect();
 
   return {
-    left: targetRect.left - rootRect.left + activeItem.layout.previewOffsetX,
-    top: targetRect.top - rootRect.top + activeItem.layout.previewOffsetY,
+    left: target.left - rootRect.left + activeItem.layout.previewOffsetX,
+    top: target.top - rootRect.top + activeItem.layout.previewOffsetY,
     width: activeItem.layout.previewWidth,
     height: activeItem.layout.previewHeight,
     borderRadius: activeItem.layout.previewBorderRadius,

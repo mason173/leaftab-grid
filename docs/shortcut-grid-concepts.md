@@ -183,6 +183,12 @@ That handoff is important because it keeps:
 - visual continuity
 - stable intent resolution
 
+The current extraction model is:
+
+- the child is inserted back into the root list right after its source folder
+- the returned root drag session becomes reorder-only
+- root placement is then resolved by choosing among projected root reorder slots, not by re-entering normal merge / directional target logic
+
 Without that handoff, extraction would feel much rougher.
 
 ## Host Responsibilities

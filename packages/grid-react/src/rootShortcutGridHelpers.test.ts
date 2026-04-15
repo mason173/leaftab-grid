@@ -1,10 +1,15 @@
 import type { Shortcut } from '@leaftab/workspace-core';
 import { describe, expect, it } from 'vitest';
 import {
+  buildDraggedRootItemAnchorRect,
+  buildProjectedRootItemPreviewRect,
+  buildProjectedRootItemAnchorRect,
   buildProjectedGridItemsPreservingFrozenSlotsByOrdinal,
   buildProjectedGridItemsForRootReorder,
   buildRootShortcutGridItems,
   resolveFinalHoverIntent,
+  resolveSpanAwareSlotHitRect,
+  resolveSpanAwareSlotProbePoint,
   shouldSkipLayoutShiftOnAnimationReenable,
 } from './rootShortcutGridHelpers';
 
@@ -170,6 +175,170 @@ describe('buildProjectedGridItemsForRootReorder', () => {
       'a',
       'b',
     ]);
+  });
+});
+
+describe('buildProjectedRootItemPreviewRect', () => {
+  it('anchors multi-span preview rects to the full item slot instead of re-centering only the preview body', () => {
+    const rect = buildProjectedRootItemPreviewRect({
+      placedItem: {
+        columnStart: 2,
+        rowStart: 2,
+        columnSpan: 2,
+      },
+      gridColumnWidth: 72,
+      columnGap: 12,
+      rowHeight: 96,
+      rowGap: 20,
+      layout: {
+        width: 156,
+        height: 180,
+        previewWidth: 152,
+        previewHeight: 156,
+        previewOffsetX: 2,
+        previewOffsetY: 4,
+        previewBorderRadius: '16px',
+      },
+    });
+
+    expect(rect).toEqual({
+      left: 86,
+      top: 120,
+      width: 152,
+      height: 156,
+      borderRadius: '16px',
+    });
+  });
+});
+
+describe('buildProjectedRootItemAnchorRect', () => {
+  it('returns the physical top-left grid cell for multi-span placements', () => {
+    expect(buildProjectedRootItemAnchorRect({
+      placedItem: {
+        columnStart: 2,
+        rowStart: 3,
+      },
+      gridColumnWidth: 72,
+      columnGap: 12,
+      rowHeight: 96,
+      rowGap: 20,
+    })).toEqual({
+      left: 84,
+      top: 232,
+      width: 72,
+      height: 96,
+    });
+  });
+});
+
+describe('buildDraggedRootItemAnchorRect', () => {
+  it('maps a dragged large-folder card back onto its physical anchor cell', () => {
+    expect(buildDraggedRootItemAnchorRect({
+      itemRect: {
+        left: 200,
+        top: 180,
+      },
+      gridColumnWidth: 72,
+      columnGap: 12,
+      rowHeight: 96,
+      layout: {
+        width: 156,
+        columnSpan: 2,
+      },
+    })).toEqual({
+      left: 200,
+      top: 180,
+      width: 72,
+      height: 96,
+    });
+  });
+});
+
+describe('resolveSpanAwareSlotProbePoint', () => {
+  it('keeps single-span items on the raw pointer point', () => {
+    expect(resolveSpanAwareSlotProbePoint({
+      point: { x: 140, y: 96 },
+      anchorRect: {
+        left: 100,
+        top: 60,
+        width: 72,
+        height: 96,
+      } as DOMRect,
+      layout: {
+        columnSpan: 1,
+        rowSpan: 1,
+      },
+    })).toEqual({ x: 140, y: 96 });
+  });
+
+  it('anchors multi-span items to the origin cell center instead of the full preview center', () => {
+    expect(resolveSpanAwareSlotProbePoint({
+      point: { x: 320, y: 300 },
+      anchorRect: {
+        left: 200,
+        top: 180,
+        width: 72,
+        height: 96,
+      },
+      layout: {
+        columnSpan: 2,
+        rowSpan: 2,
+      },
+    })).toEqual({ x: 236, y: 228 });
+  });
+});
+
+describe('resolveSpanAwareSlotHitRect', () => {
+  it('keeps single-span slot hit rects equal to the preview rect', () => {
+    expect(resolveSpanAwareSlotHitRect({
+      previewRect: {
+        left: 100,
+        top: 60,
+        width: 72,
+        height: 72,
+      },
+      anchorRect: {
+        left: 100,
+        top: 60,
+        width: 72,
+        height: 96,
+      },
+      layout: {
+        columnSpan: 1,
+        rowSpan: 1,
+      },
+    })).toEqual({
+      left: 100,
+      top: 60,
+      width: 72,
+      height: 72,
+    });
+  });
+
+  it('shrinks multi-span slot hit rects to the origin preview cell', () => {
+    expect(resolveSpanAwareSlotHitRect({
+      previewRect: {
+        left: 200,
+        top: 180,
+        width: 160,
+        height: 160,
+      },
+      anchorRect: {
+        left: 200,
+        top: 180,
+        width: 72,
+        height: 96,
+      },
+      layout: {
+        columnSpan: 2,
+        rowSpan: 2,
+      },
+    })).toEqual({
+      left: 200,
+      top: 180,
+      width: 72,
+      height: 96,
+    });
   });
 });
 

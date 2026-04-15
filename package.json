@@ -18,7 +18,9 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:packages && npm run build:examples",
+    "build:packages": "npm run build --workspace @leaftab/workspace-core && npm run build --workspace @leaftab/workspace-react && npm run build --workspace @leaftab/workspace-preset-leaftab",
+    "build:examples": "npm run build --workspace @leaftab/workspace-minimal-example && npm run build --workspace @leaftab/workspace-leaftab-like-example && npm run build --workspace @leaftab/workspace-custom-theme-example && npm run build --workspace @leaftab/workspace-showcase",
     "custom-theme:dev": "npm run build --workspace @leaftab/workspace-core && npm run build --workspace @leaftab/workspace-react && npm run build --workspace @leaftab/workspace-preset-leaftab && npm run dev --workspace @leaftab/workspace-custom-theme-example --",
     "custom-theme:build": "npm run build --workspace @leaftab/workspace-core && npm run build --workspace @leaftab/workspace-react && npm run build --workspace @leaftab/workspace-preset-leaftab && npm run build --workspace @leaftab/workspace-custom-theme-example",
     "custom-theme:preview": "npm run preview --workspace @leaftab/workspace-custom-theme-example",

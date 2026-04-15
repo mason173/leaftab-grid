@@ -23,6 +23,7 @@ This document covers:
 
 - root-grid drag recognition
 - root-grid reorder, merge, and move-into-folder behavior
+- extracted-folder-child root-drag behavior
 - folder-surface reorder behavior
 - sticky projection and bridge rules
 - large-folder and variable-span reorder behavior
@@ -99,6 +100,22 @@ Current directional contract:
 
 This is the current closed-loop rule set behind the compact grid.
 
+### Folder Extraction Slot-First Mode
+
+When a shortcut is extracted from a folder back into the root grid, that drag session does not continue using the normal target-first merge / reorder classifier.
+
+Instead:
+
+- the extracted child is inserted back into the root shortcut list immediately after its source folder for ordering and mutation purposes
+- the extracted root drag session becomes `reorder-only`
+- merge and move-into-folder are disabled for that session
+- the runtime resolves placement from projected root reorder slots instead of from target icon entry direction
+- the dragged card's own root-card center picks the nearest stable slot
+- the source folder and neighboring root items are treated as normal reorder neighbors that may yield from any approach side
+- slot hysteresis keeps the current claimed slot until another slot clearly wins
+
+This is what keeps the "source folder -> gap to the right -> next icon" placement path stable instead of collapsing back into the neighbor's occupied slot on small movements.
+
 ## Root Target Zones
 
 For a given target, the recognition point is classified into one of three zones:
@@ -115,6 +132,10 @@ Operational meaning:
 - `merge` can create `merge-root-shortcuts` or `move-root-shortcut-into-folder`
 - `neutral` should not create a fresh reorder by itself
 - `reorder` is what causes yield, displacement, and claimed slot changes
+
+These three target zones apply to normal root drags.
+
+Extracted reorder-only root drags bypass this target-zone classifier and resolve directly against root reorder slots.
 
 ## Merge And Reorder Semantics
 
@@ -146,6 +167,10 @@ Once a reorder has already displaced items, the previous reorder can remain clai
 - the drag has not returned to the active source icon
 - the current session still has projected displacement
 - no later target has produced a new valid yielded slot
+
+For extracted reorder-only root drags, the equivalent rule is:
+
+- the current projected root slot stays claimed until a later projected slot clearly beats it
 
 ### Sticky reorder preservation
 
@@ -232,6 +257,8 @@ Still, the same stability principles apply:
 - the currently yielded slot should stay latched until a later slot truly takes over
 
 Extraction from a folder starts a root drag session and returns to the root-grid engine.
+
+That returned root drag session is a slot-first reorder-only mode, not a merge-capable target-first mode.
 
 ## Variable-Span And Large-Folder Behavior
 

@@ -6,6 +6,7 @@ import {
 } from '@leaftab/workspace-core';
 import { describe, expect, it } from 'vitest';
 import {
+  resolveCompactReorderOnlyHoverResolution,
   resolveCompactRootHoverResolution,
   type CompactTargetRegions,
 } from './compactRootHover';
@@ -174,6 +175,247 @@ describe('resolveCompactRootHoverResolution', () => {
       activeShortcutId: 'a',
       targetShortcutId: 'c',
     });
+    expect(result.visualProjectionIntent).toEqual(previousIntent);
+  });
+
+  it('supports extracted reorder-only drags while using the source folder icon region as the baseline', () => {
+    const items = createItems([
+      createLink('extracted', 'Extracted'),
+      createLink('target', 'Target'),
+      createFolder('folder-source', 'Folder'),
+    ]);
+    const regionsById: Record<string, CompactTargetRegions> = {
+      extracted: createRegions(240),
+      target: createRegions(120),
+      'folder-source': createRegions(0),
+    };
+    const measuredItems = buildMeasuredItems(items, regionsById);
+    const previousRecognitionPoint = { x: 210, y: 36 };
+    const recognitionPoint = { x: 182, y: 36 };
+
+    const withSourceFolderOverride = resolveCompactReorderOnlyHoverResolution({
+      activeSortId: 'extracted',
+      recognitionPoint,
+      previousRecognitionPoint,
+      activeSourceRegionOverride: regionsById['folder-source'].targetIconRegion,
+      measuredItems,
+      items,
+      previousInteractionIntent: null,
+      previousVisualProjectionIntent: null,
+      interactionProjectionOffsets: createProjectionMap(),
+      visualProjectionOffsets: createProjectionMap(),
+      resolveRegions: (item) => regionsById[item.sortId],
+      columnGap: 20,
+      rowGap: 20,
+    });
+
+    expect(withSourceFolderOverride.interactionIntent).toEqual({
+      overShortcutId: 'target',
+      targetIndex: 1,
+      edge: 'after',
+    });
+    expect(withSourceFolderOverride.visualProjectionIntent).toEqual({
+      overShortcutId: 'target',
+      targetIndex: 1,
+      edge: 'after',
+    });
+  });
+
+  it('lets extracted reorder-only drags yield a target when entering its icon from any direction', () => {
+    const items = createItems([
+      createLink('upper', 'Upper'),
+      createLink('extracted', 'Extracted'),
+      createFolder('folder-source', 'Folder'),
+    ]);
+    const regionsById: Record<string, CompactTargetRegions> = {
+      upper: createRegions(132, 0),
+      extracted: createRegions(132, 144),
+      'folder-source': createRegions(0, 144),
+    };
+    const measuredItems = buildMeasuredItems(items, regionsById);
+
+    const result = resolveCompactReorderOnlyHoverResolution({
+      activeSortId: 'extracted',
+      recognitionPoint: { x: 182, y: 56 },
+      previousRecognitionPoint: { x: 182, y: 84 },
+      activeSourceRegionOverride: regionsById['folder-source'].targetIconRegion,
+      activeVisualRect: {
+        left: 146,
+        top: 20,
+        right: 218,
+        bottom: 92,
+        width: 72,
+        height: 72,
+      },
+      measuredItems,
+      items,
+      previousInteractionIntent: null,
+      previousVisualProjectionIntent: null,
+      interactionProjectionOffsets: createProjectionMap(),
+      visualProjectionOffsets: createProjectionMap(),
+      resolveRegions: (item) => regionsById[item.sortId],
+      columnGap: 20,
+      rowGap: 20,
+    });
+
+    expect(result.interactionIntent).toEqual({
+      overShortcutId: 'upper',
+      targetIndex: 0,
+      edge: 'before',
+    });
+    expect(result.visualProjectionIntent).toEqual({
+      overShortcutId: 'upper',
+      targetIndex: 0,
+      edge: 'before',
+    });
+  });
+
+  it('lets an extracted reorder-only drag displace its own source folder when entering that folder icon', () => {
+    const items = createItems([
+      createFolder('folder-source', 'Folder'),
+      createLink('extracted', 'Extracted'),
+      createLink('other', 'Other'),
+    ]);
+    const regionsById: Record<string, CompactTargetRegions> = {
+      'folder-source': createRegions(132, 144),
+      extracted: createRegions(264, 144),
+      other: createRegions(396, 144),
+    };
+    const measuredItems = buildMeasuredItems(items, regionsById);
+
+    const result = resolveCompactReorderOnlyHoverResolution({
+      activeSortId: 'extracted',
+      recognitionPoint: { x: 182, y: 172 },
+      previousRecognitionPoint: { x: 182, y: 204 },
+      activeSourceRegionOverride: regionsById['folder-source'].targetIconRegion,
+      sourceTargetShortcutId: 'folder-source',
+      activeVisualRect: {
+        left: 146,
+        top: 152,
+        right: 218,
+        bottom: 224,
+        width: 72,
+        height: 72,
+      },
+      measuredItems,
+      items,
+      previousInteractionIntent: null,
+      previousVisualProjectionIntent: null,
+      interactionProjectionOffsets: createProjectionMap(),
+      visualProjectionOffsets: createProjectionMap(),
+      resolveRegions: (item) => regionsById[item.sortId],
+      columnGap: 20,
+      rowGap: 20,
+    });
+
+    expect(result.interactionIntent).toEqual({
+      overShortcutId: 'folder-source',
+      targetIndex: 0,
+      edge: 'before',
+    });
+    expect(result.visualProjectionIntent).toEqual({
+      overShortcutId: 'folder-source',
+      targetIndex: 0,
+      edge: 'before',
+    });
+  });
+
+
+  it('keeps the previous reorder-only claimed slot latched across the empty gap before the next right-side target', () => {
+    const items = createItems([
+      createLink('a', 'Alpha'),
+      createLink('b', 'Beta'),
+      createLink('c', 'Gamma'),
+    ]);
+    const regionsById: Record<string, CompactTargetRegions> = {
+      a: createRegions(0),
+      b: createRegions(132),
+      c: createRegions(264),
+    };
+    const measuredItems = buildMeasuredItems(items, regionsById);
+    const previousIntent = {
+      overShortcutId: 'b',
+      targetIndex: 1,
+      edge: 'after' as const,
+    };
+    const projectionOffsets = buildProjectionOffsetsFromIntent({
+      items,
+      measuredItems,
+      activeSortId: 'a',
+      intent: {
+        type: 'reorder-root',
+        activeShortcutId: 'a',
+        overShortcutId: 'b',
+        targetIndex: 1,
+        edge: 'after',
+      },
+    });
+
+    const result = resolveCompactReorderOnlyHoverResolution({
+      activeSortId: 'a',
+      recognitionPoint: { x: 238, y: 60 },
+      previousRecognitionPoint: { x: 226, y: 60 },
+      measuredItems,
+      items,
+      previousInteractionIntent: previousIntent,
+      previousVisualProjectionIntent: previousIntent,
+      interactionProjectionOffsets: projectionOffsets,
+      visualProjectionOffsets: projectionOffsets,
+      resolveRegions: (item) => regionsById[item.sortId],
+      columnGap: 20,
+      rowGap: 20,
+    });
+
+    expect(result.interactionIntent).toEqual(previousIntent);
+    expect(result.visualProjectionIntent).toEqual(previousIntent);
+  });
+
+  it('keeps the previous reorder-only claimed slot latched while entering the yielded target through its non-yield side', () => {
+    const items = createItems([
+      createLink('a', 'Alpha'),
+      createLink('b', 'Beta'),
+      createLink('c', 'Gamma'),
+    ]);
+    const regionsById: Record<string, CompactTargetRegions> = {
+      a: createRegions(0),
+      b: createRegions(132),
+      c: createRegions(264),
+    };
+    const measuredItems = buildMeasuredItems(items, regionsById);
+    const previousIntent = {
+      overShortcutId: 'c',
+      targetIndex: 2,
+      edge: 'after' as const,
+    };
+    const projectionOffsets = buildProjectionOffsetsFromIntent({
+      items,
+      measuredItems,
+      activeSortId: 'a',
+      intent: {
+        type: 'reorder-root',
+        activeShortcutId: 'a',
+        overShortcutId: 'c',
+        targetIndex: 2,
+        edge: 'after',
+      },
+    });
+
+    const result = resolveCompactReorderOnlyHoverResolution({
+      activeSortId: 'a',
+      recognitionPoint: { x: 280, y: 60 },
+      previousRecognitionPoint: { x: 250, y: 60 },
+      measuredItems,
+      items,
+      previousInteractionIntent: previousIntent,
+      previousVisualProjectionIntent: previousIntent,
+      interactionProjectionOffsets: projectionOffsets,
+      visualProjectionOffsets: projectionOffsets,
+      resolveRegions: (item) => regionsById[item.sortId],
+      columnGap: 20,
+      rowGap: 20,
+    });
+
+    expect(result.interactionIntent).toEqual(previousIntent);
     expect(result.visualProjectionIntent).toEqual(previousIntent);
   });
 

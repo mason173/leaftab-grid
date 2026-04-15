@@ -234,7 +234,7 @@ describe('resolveCompactReorderOnlyHoverResolution', () => {
     expect(result.visualProjectionIntent).toEqual(previousIntent);
   });
 
-  it('keeps the target steady while the icon center is inside an upper target icon from the merge-side', () => {
+  it('reorders while the icon center enters an upper target icon from the former merge-side', () => {
     const items = createItems([
       createLink('a', 'Alpha'),
       createLink('b', 'Beta'),
@@ -270,7 +270,15 @@ describe('resolveCompactReorderOnlyHoverResolution', () => {
       rowGap: 20,
     });
 
-    expect(result.interactionIntent).toBeNull();
-    expect(result.visualProjectionIntent).toBeNull();
+    expect(result.interactionIntent).toEqual({
+      overShortcutId: 'b',
+      targetIndex: 1,
+      edge: 'before',
+    });
+    expect(result.visualProjectionIntent).toEqual({
+      overShortcutId: 'b',
+      targetIndex: 1,
+      edge: 'before',
+    });
   });
 });

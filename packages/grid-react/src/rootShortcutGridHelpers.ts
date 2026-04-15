@@ -1,4 +1,10 @@
-import type { Shortcut } from '@leaftab/workspace-core';
+import {
+  getProjectedGridItemRect,
+  packGridItems,
+  type PackedGridItem,
+  type RootShortcutDropIntent,
+  type Shortcut,
+} from '@leaftab/workspace-core';
 import { normalizePreviewGeometry, type GridPreviewRect } from './previewGeometry';
 
 export type RootShortcutGridItemLayout = {
@@ -34,6 +40,18 @@ export type RootShortcutGridItem<TShortcut extends Shortcut = Shortcut> = {
   shortcut: TShortcut;
   shortcutIndex: number;
   layout: NormalizedRootShortcutGridItemLayout;
+};
+
+export type RootReorderSlotCandidate = {
+  targetIndex: number;
+  overShortcutId: string;
+  edge: 'before' | 'after';
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
 };
 
 export function normalizeRootShortcutGridItemLayout(
@@ -167,6 +185,282 @@ export function buildProjectedGridItemsForRootReorder<TShortcut extends Shortcut
   const projectedItems = [...remainingItems];
   projectedItems.splice(clampedTargetIndex, 0, items[activeIndex]);
   return projectedItems;
+}
+
+export function buildRootReorderSlotCandidates<TShortcut extends Shortcut>(params: {
+  items: RootShortcutGridItem<TShortcut>[];
+  activeSortId: string;
+  gridColumns: number;
+  gridColumnWidth: number;
+  columnGap: number;
+  rowHeight: number;
+  rowGap: number;
+  frozenSortIds?: ReadonlySet<string> | null;
+}): RootReorderSlotCandidate[] {
+  const {
+    items,
+    activeSortId,
+    gridColumns,
+    gridColumnWidth,
+    columnGap,
+    rowHeight,
+    rowGap,
+    frozenSortIds = null,
+  } = params;
+  const activeItem = items.find((item) => item.sortId === activeSortId);
+  if (!activeItem) return [];
+
+  const seenPhysicalPlacements = new Set<string>();
+  const registerCandidate = (candidate: {
+    targetIndex: number;
+    overShortcutId: string;
+    edge: 'before' | 'after';
+    placedActiveItem: Pick<PackedGridItem<unknown>, 'columnStart' | 'rowStart' | 'columnSpan'>;
+  }): RootReorderSlotCandidate | null => {
+    const placementKey = `${candidate.placedActiveItem.columnStart}:${candidate.placedActiveItem.rowStart}`;
+    if (seenPhysicalPlacements.has(placementKey)) {
+      return null;
+    }
+    seenPhysicalPlacements.add(placementKey);
+
+    const fullRect = getProjectedGridItemRect({
+      placedItem: candidate.placedActiveItem,
+      gridColumnWidth,
+      columnGap,
+      rowHeight,
+      rowGap,
+      width: activeItem.layout.width,
+      height: activeItem.layout.height,
+    });
+
+    return {
+      targetIndex: candidate.targetIndex,
+      overShortcutId: candidate.overShortcutId,
+      edge: candidate.edge,
+      left: fullRect.left,
+      top: fullRect.top,
+      width: fullRect.width,
+      height: fullRect.height,
+      centerX: fullRect.left + fullRect.width / 2,
+      centerY: fullRect.top + fullRect.height / 2,
+    };
+  };
+
+  if (frozenSortIds && frozenSortIds.size > 0) {
+    const remainingMovableItems = items.filter(
+      (item) => !frozenSortIds.has(item.sortId) && item.sortId !== activeSortId,
+    );
+    if (remainingMovableItems.length === 0) return [];
+
+    return Array.from({ length: remainingMovableItems.length + 1 }, (_, targetMovableOrdinal) => {
+      const projection = buildProjectedGridItemsPreservingFrozenSlotsByOrdinal({
+        items,
+        activeSortId,
+        targetMovableOrdinal,
+        frozenSortIds,
+      });
+      if (!projection) return null;
+
+      const projectedLayout = packGridItems({
+        items: projection.projectedItems,
+        gridColumns,
+        getSpan: (item) => ({
+          columnSpan: item.layout.columnSpan,
+          rowSpan: item.layout.rowSpan,
+        }),
+      });
+      const placedActiveItem = projectedLayout.placedItems.find((item) => item.sortId === activeSortId);
+      const overItem = targetMovableOrdinal < remainingMovableItems.length
+        ? remainingMovableItems[targetMovableOrdinal]
+        : remainingMovableItems[remainingMovableItems.length - 1];
+      if (!placedActiveItem || !overItem) return null;
+
+      return registerCandidate({
+        targetIndex: projection.activeFullIndex,
+        overShortcutId: overItem.shortcut.id,
+        edge: targetMovableOrdinal < remainingMovableItems.length ? 'before' : 'after',
+        placedActiveItem,
+      });
+    }).filter((candidate): candidate is RootReorderSlotCandidate => Boolean(candidate));
+  }
+
+  const remainingItems = items.filter((item) => item.sortId !== activeSortId);
+  if (remainingItems.length === 0) return [];
+
+  return Array.from({ length: remainingItems.length + 1 }, (_, targetIndex) => {
+    const projectedItems = [...remainingItems];
+    projectedItems.splice(targetIndex, 0, activeItem);
+
+    const projectedLayout = packGridItems({
+      items: projectedItems,
+      gridColumns,
+      getSpan: (item) => ({
+        columnSpan: item.layout.columnSpan,
+        rowSpan: item.layout.rowSpan,
+      }),
+    });
+    const placedActiveItem = projectedLayout.placedItems.find((item) => item.sortId === activeSortId);
+    const overItem = targetIndex < remainingItems.length
+      ? remainingItems[targetIndex]
+      : remainingItems[remainingItems.length - 1];
+    if (!placedActiveItem || !overItem) return null;
+
+    return registerCandidate({
+      targetIndex,
+      overShortcutId: overItem.shortcut.id,
+      edge: targetIndex < remainingItems.length ? 'before' : 'after',
+      placedActiveItem,
+    });
+  }).filter((candidate): candidate is RootReorderSlotCandidate => Boolean(candidate));
+}
+
+function isSameRootReorderSlotCandidate(
+  candidate: RootReorderSlotCandidate,
+  intent: Extract<RootShortcutDropIntent, { type: 'reorder-root' }>,
+): boolean {
+  return (
+    intent.type === 'reorder-root'
+    && candidate.targetIndex === intent.targetIndex
+    && candidate.overShortcutId === intent.overShortcutId
+    && candidate.edge === intent.edge
+  );
+}
+
+export function pickClosestRootReorderSlotCandidate(params: {
+  point: { x: number; y: number };
+  candidates: RootReorderSlotCandidate[];
+  previousIntent?: RootShortcutDropIntent | null;
+  hysteresisPx?: number;
+}): RootReorderSlotCandidate | null {
+  const {
+    point,
+    candidates,
+    previousIntent = null,
+    hysteresisPx = 28,
+  } = params;
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const ranked = candidates
+    .map((candidate) => ({
+      candidate,
+      distance: Math.hypot(point.x - candidate.centerX, point.y - candidate.centerY),
+    }))
+    .sort((left, right) => left.distance - right.distance);
+
+  const best = ranked[0] ?? null;
+  if (!best) {
+    return null;
+  }
+
+  if (previousIntent?.type === 'reorder-root') {
+    const previous = ranked.find(({ candidate }) => isSameRootReorderSlotCandidate(candidate, previousIntent));
+    if (previous && previous.distance <= best.distance + hysteresisPx) {
+      return previous.candidate;
+    }
+  }
+
+  return best.candidate;
+}
+
+export function buildProjectedRootItemPreviewRect(params: {
+  placedItem: Pick<PackedGridItem<unknown>, 'columnStart' | 'rowStart' | 'columnSpan'>;
+  gridColumnWidth: number;
+  columnGap: number;
+  rowHeight: number;
+  rowGap: number;
+  layout: Pick<
+    NormalizedRootShortcutGridItemLayout,
+    'width' | 'height' | 'previewWidth' | 'previewHeight' | 'previewOffsetX' | 'previewOffsetY' | 'previewBorderRadius'
+  >;
+}): { left: number; top: number; width: number; height: number; borderRadius?: string } {
+  const { placedItem, gridColumnWidth, columnGap, rowHeight, rowGap, layout } = params;
+  const projectedItemRect = getProjectedGridItemRect({
+    placedItem,
+    gridColumnWidth,
+    columnGap,
+    rowHeight,
+    rowGap,
+    width: layout.width,
+    height: layout.height,
+  });
+
+  return {
+    left: projectedItemRect.left + layout.previewOffsetX,
+    top: projectedItemRect.top + layout.previewOffsetY,
+    width: layout.previewWidth,
+    height: layout.previewHeight,
+    borderRadius: layout.previewBorderRadius,
+  };
+}
+
+export function buildProjectedRootItemAnchorRect(params: {
+  placedItem: Pick<PackedGridItem<unknown>, 'columnStart' | 'rowStart'>;
+  gridColumnWidth: number;
+  columnGap: number;
+  rowHeight: number;
+  rowGap: number;
+}): { left: number; top: number; width: number; height: number } {
+  const { placedItem, gridColumnWidth, columnGap, rowHeight, rowGap } = params;
+
+  return {
+    left: (placedItem.columnStart - 1) * (gridColumnWidth + columnGap),
+    top: (placedItem.rowStart - 1) * (rowHeight + rowGap),
+    width: gridColumnWidth,
+    height: rowHeight,
+  };
+}
+
+export function buildDraggedRootItemAnchorRect(params: {
+  itemRect: { left: number; top: number };
+  gridColumnWidth: number;
+  columnGap: number;
+  rowHeight: number;
+  layout: Pick<NormalizedRootShortcutGridItemLayout, 'width' | 'columnSpan'>;
+}): { left: number; top: number; width: number; height: number } {
+  const { itemRect, gridColumnWidth, columnGap, rowHeight, layout } = params;
+  const spanWidth = (
+    gridColumnWidth * Math.max(1, layout.columnSpan)
+    + columnGap * Math.max(0, Math.max(1, layout.columnSpan) - 1)
+  );
+  const slotLeft = itemRect.left - Math.max(0, (spanWidth - layout.width) / 2);
+
+  return {
+    left: slotLeft,
+    top: itemRect.top,
+    width: gridColumnWidth,
+    height: rowHeight,
+  };
+}
+
+export function resolveSpanAwareSlotProbePoint(params: {
+  point: { x: number; y: number };
+  anchorRect: { left: number; top: number; width: number; height: number };
+  layout: Pick<NormalizedRootShortcutGridItemLayout, 'columnSpan' | 'rowSpan'>;
+}): { x: number; y: number } {
+  const { point, anchorRect, layout } = params;
+  if (layout.columnSpan <= 1 && layout.rowSpan <= 1) {
+    return point;
+  }
+
+  return {
+    x: anchorRect.left + anchorRect.width / 2,
+    y: anchorRect.top + anchorRect.height / 2,
+  };
+}
+
+export function resolveSpanAwareSlotHitRect(params: {
+  previewRect: { left: number; top: number; width: number; height: number };
+  anchorRect: { left: number; top: number; width: number; height: number };
+  layout: Pick<NormalizedRootShortcutGridItemLayout, 'columnSpan' | 'rowSpan'>;
+}): { left: number; top: number; width: number; height: number } {
+  const { previewRect, anchorRect, layout } = params;
+  if (layout.columnSpan <= 1 && layout.rowSpan <= 1) {
+    return previewRect;
+  }
+
+  return anchorRect;
 }
 
 export function shouldSkipLayoutShiftOnAnimationReenable(params: {

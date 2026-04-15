@@ -116,6 +116,23 @@ Instead:
 
 This is what keeps the "source folder -> gap to the right -> next icon" placement path stable instead of collapsing back into the neighbor's occupied slot on small movements.
 
+### Sparse Root Slot-First Reorder Mode
+
+When the root grid is configured with fewer than 8 columns, each compact cell becomes materially wider than the icon body.
+
+In that sparse layout mode:
+
+- merge and move-into-folder still require entering the target icon body
+- root reorder no longer trusts empty space inside a wide target cell as a meaningful reorder hit
+- the runtime resolves reorder from projected root slots first
+- slot hysteresis keeps the currently claimed slot stable while traveling through the extra horizontal gap
+
+This prevents low-column layouts from producing:
+
+- false reorder flips while moving across cell padding
+- grouping / folder-entry decisions from empty cell space
+- visible gaps caused by the pointer being in a wide cell but not on a valid projected slot
+
 ## Root Target Zones
 
 For a given target, the recognition point is classified into one of three zones:

@@ -1492,6 +1492,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
   visualProjectionOffsets: Map<string, ProjectionOffset>;
   resolveRegions: (item: CompactMeasuredItem<TItem>) => CompactTargetRegions;
   slotIntent?: RootShortcutDropIntent | null;
+  preferSlotIntentForReorder?: boolean;
   columnGap: number;
   rowGap: number;
 }): CompactRootHoverResolution {
@@ -1509,6 +1510,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     visualProjectionOffsets,
     resolveRegions,
     slotIntent = null,
+    preferSlotIntentForReorder = false,
     columnGap,
     rowGap,
   } = params;
@@ -1591,7 +1593,7 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     ) => CompactTargetRegions,
   });
 
-  if (previousInteractionIntent?.type === 'reorder-root') {
+  if (!preferSlotIntentForReorder && previousInteractionIntent?.type === 'reorder-root') {
     const previousTarget = findMeasuredItemByShortcutId(measuredItems, previousInteractionIntent.overShortcutId);
     const previousTargetRegions = previousTarget ? resolveRegions(previousTarget) : null;
     const activeSourceIconRegion = resolveActiveSourceIconRegion({
@@ -1648,7 +1650,11 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
     activeSourceRegionOverride,
   });
   if (!activeSourceIconRegion) {
-    return toResolution(previousStickyReorderIntent ?? claimedReorderIntent);
+    return toResolution(
+      (preferSlotIntentForReorder ? slotIntent : null)
+      ?? previousStickyReorderIntent
+      ?? claimedReorderIntent,
+    );
   }
   const rawIntent = buildDirectionalCompactIntent({
     activeItem: activeMeasuredItem,
@@ -1683,11 +1689,25 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
       visualProjectionOffsets,
     });
     const resolution = toResolution(
+      (preferSlotIntentForReorder ? slotIntent : null)
+      ?? (
       (shouldHoldPreviousReorder && previousInteractionIntent?.type === 'reorder-root'
         ? previousInteractionIntent
-        : previousStickyReorderIntent ?? claimedReorderIntent),
+        : previousStickyReorderIntent ?? claimedReorderIntent)
+      ),
     );
+    if (
+      preferSlotIntentForReorder
+      && slotIntent?.type === 'reorder-root'
+      && resolution.interactionIntent?.type !== 'move-root-shortcut-into-folder'
+    ) {
+      return toResolution(slotIntent);
+    }
     return resolution;
+  }
+
+  if (preferSlotIntentForReorder && rawIntent.type === 'reorder-root') {
+    return toResolution(slotIntent ?? rawIntent);
   }
 
   return toResolution(rawIntent);

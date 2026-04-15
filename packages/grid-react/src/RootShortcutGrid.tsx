@@ -790,6 +790,10 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     if (!gridWidthPx || gridColumns <= 0) return null;
     return (gridWidthPx - columnGap * Math.max(0, gridColumns - 1)) / Math.max(gridColumns, 1);
   }, [columnGap, gridColumns, gridWidthPx]);
+  const usesSparseRootSlotReorder = gridColumns < 8;
+  const shouldUseProjectedRootReorderSlots = Boolean(gridColumnWidth) && (
+    usesSpanAwareReorder || usesSparseRootSlotReorder
+  );
   const activeDragItem = useMemo(
     () => items.find((item) => item.sortId === activeDragId) ?? null,
     [items, activeDragId],
@@ -814,7 +818,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
   }, [activeDragItem, items, usesSpanAwareReorder]);
 
   const reorderSlotCandidates = useMemo<RootReorderSlotCandidate[]>(() => {
-    if (!usesSpanAwareReorder || !activeDragId || !gridColumnWidth) return [];
+    if (!shouldUseProjectedRootReorderSlots || !activeDragId || !gridColumnWidth) return [];
     return buildRootReorderSlotCandidates({
       items,
       activeSortId: activeDragId,
@@ -825,7 +829,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       rowGap,
       frozenSortIds: frozenSpanItemSortIds,
       rectMode: 'preview',
-      hitRectMode: 'span-aware',
+      hitRectMode: usesSpanAwareReorder ? 'span-aware' : 'preview',
     });
   }, [
     activeDragId,
@@ -836,6 +840,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     items,
     rowGap,
     rowHeight,
+    shouldUseProjectedRootReorderSlots,
+    usesSparseRootSlotReorder,
     usesSpanAwareReorder,
   ]);
   const extractedReorderSlotCandidates = useMemo<RootReorderSlotCandidate[]>(() => {
@@ -1164,7 +1170,11 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       return EMPTY_HOVER_RESOLUTION;
     }
 
-    const shouldUseSlotIntent = usesSpanAwareReorder && Boolean(gridColumnWidth) && !(
+    const {
+      interactionIntent: previousReorderIntent,
+      visualProjectionIntent: previousVisualReorderIntent,
+    } = extractPreviousRootReorderIntents(currentHoverResolution);
+    const shouldUseSlotIntent = shouldUseProjectedRootReorderSlots && !(
       resolveCompactTargetRegions
       && frozenSpanItemSortIds
       && frozenSpanItemSortIds.size > 0
@@ -1192,9 +1202,15 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
           });
           return resolveRootReorderSlotIntent({
             activeShortcutId: activeItem.shortcut.id,
-            point: slotProbePoint,
+            point: usesSpanAwareReorder
+              ? slotProbePoint
+              : {
+                  x: recognitionPoint.x - rootRect.left,
+                  y: recognitionPoint.y - rootRect.top,
+                },
             candidates: reorderSlotCandidates,
-            mode: 'containing-probe',
+            previousIntent: previousReorderIntent ?? previousVisualReorderIntent,
+            mode: usesSpanAwareReorder ? 'containing-probe' : 'closest-center',
           });
         })()
       : null;
@@ -1202,10 +1218,6 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
       sourceRootShortcutId: extractedSourceRootShortcutId,
       activeShortcut: activeItem.shortcut,
     });
-    const {
-      interactionIntent: previousReorderIntent,
-      visualProjectionIntent: previousVisualReorderIntent,
-    } = extractPreviousRootReorderIntents(currentHoverResolution);
     const extractedSlotIntent = extractedSourceRootShortcutId
       ? (() => {
           return resolveRootReorderSlotIntent({
@@ -1254,6 +1266,7 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
           placementsBySortId: placedGridItemsBySortId,
         }),
         slotIntent,
+        preferSlotIntentForReorder: usesSparseRootSlotReorder,
         columnGap,
         rowGap,
       });
@@ -1328,6 +1341,8 @@ export const RootShortcutGrid = React.memo(function RootShortcutGrid({
     resolveDropTargetRects,
     rowGap,
     rowHeight,
+    shouldUseProjectedRootReorderSlots,
+    usesSparseRootSlotReorder,
     usesSpanAwareReorder,
   ]);
 

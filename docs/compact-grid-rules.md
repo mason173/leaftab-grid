@@ -146,6 +146,11 @@ When the dragged item is a link and the recognition point enters a target icon b
 - target link -> `merge-root-shortcuts`
 - target folder -> `move-root-shortcut-into-folder`
 
+When `merge-root-shortcuts` commits:
+
+- the new folder occupies the target link's slot, not the dragged link's previous slot
+- merged children keep their dragged/target identity, but container placement stays anchored to the target
+
 ### Root grid reorder behavior
 
 When the recognition point is on the target's reorder side:

@@ -105,6 +105,7 @@ export function App() {
           ROOT_SHORTCUTS_PATH,
           [outcome.activeShortcutId, outcome.targetShortcutId],
           createFolderFromMerge,
+          outcome.targetShortcutId,
         );
         if (!result) return;
         updateShortcuts(result.nextShortcuts);

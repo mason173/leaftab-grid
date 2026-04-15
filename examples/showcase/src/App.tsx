@@ -243,6 +243,7 @@ export function App() {
           ROOT_SHORTCUTS_PATH,
           [outcome.activeShortcutId, outcome.targetShortcutId],
           createFolderFromMerge,
+          outcome.targetShortcutId,
         );
         if (!result) {
           pushLog(`${sourceLabel}: merge request could not be applied.`, 'accent');

@@ -334,7 +334,6 @@ function shouldKeepStickyReorderIntent<TItem extends CompactHoverItem>(params: {
       ? rectIntersectsTargetRegion(activeVisualRect, bridgeRegion)
       : pointInTargetRegion(recognitionPoint, bridgeRegion);
   }
-
   const stickyDistanceThresholdPx = Math.max(columnGap, rowGap);
   return distanceToTargetRegion(recognitionPoint, targetIconHitRegion) <= stickyDistanceThresholdPx;
 }
@@ -1608,11 +1607,6 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
   if (!preferSlotIntentForReorder && previousInteractionIntent?.type === 'reorder-root') {
     const previousTarget = findMeasuredItemByShortcutId(measuredItems, previousInteractionIntent.overShortcutId);
     const previousTargetRegions = previousTarget ? resolveDisplayedRegions(previousTarget) : null;
-    const activeSourceIconRegion = resolveActiveSourceIconRegion({
-      activeMeasuredItem,
-      resolveRegions: resolveDisplayedRegions,
-      activeSourceRegionOverride,
-    });
     if (
       previousTarget
       && previousTargetRegions
@@ -1621,13 +1615,21 @@ export function resolveCompactRootHoverResolution<TItem extends CompactHoverItem
         visualProjectionOffsets,
       })
       && pointInTargetRegion(recognitionPoint, previousTargetRegions.targetCellRegion)
-      && resolveDirectionalCompactZone({
-        activeRect: activeSourceIconRegion ?? previousTargetRegions.targetIconRegion,
-        targetRect: previousTargetRegions.targetIconRegion,
-        pointer: recognitionPoint,
-      }) !== 'merge'
     ) {
       return toResolution(previousInteractionIntent);
+    }
+  }
+
+  if (claimedReorderIntent?.type === 'reorder-root') {
+    const claimedTarget = findMeasuredItemByShortcutId(measuredItems, claimedReorderIntent.overShortcutId);
+    const claimedTargetRegions = claimedTarget ? resolveRegions(claimedTarget) : null;
+
+    if (
+      claimedTarget
+      && claimedTargetRegions
+      && pointInTargetRegion(recognitionPoint, claimedTargetRegions.targetCellRegion)
+    ) {
+      return toResolution(claimedReorderIntent);
     }
   }
 
